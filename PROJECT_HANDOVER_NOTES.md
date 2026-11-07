@@ -73,7 +73,21 @@ npm run dev:client
 - List of active fan memberships, renewal dates, and billing amounts.
 - Cancel or manage memberships with one click.
 
-### 7. Instant Demo Persona Switcher & Test Wallet
-- **Identity Switcher** (in top navbar): Switch between **Alex Johnson (Fan / VIP Subscriber)**, **Aria Nova (Fitness Coach)**, **Marcus Cole (Music Producer)**, **Elena Rostova (Concept Artist)**, and **Kai Vance (Tech & Gaming)**.
-- **Test Wallet Top-Up**: Click wallet balance pill in the navbar to add \$25, \$50, or \$100 test credit to test purchases, tips, and unlocks.
+### 7. Complete User Authentication System (Bcrypt & JWT)
+- **User Model** ([`server/src/models/User.js`](file:///c:/Users/user/OneDrive/Desktop/JustFans/server/src/models/User.js)):
+  - Fields: `id`, `username`, `email`, `passwordHash`, `createdAt`, `role`, `walletBalance`.
+  - Password hashing with **bcrypt** (salt rounds = 10).
+  - Duplicate username and email validation with clean HTTP 409 responses.
+- **REST Endpoints** ([`server/src/routes/auth.js`](file:///c:/Users/user/OneDrive/Desktop/JustFans/server/src/routes/auth.js)):
+  - `POST /api/auth/signup`: Password hashing + duplicate validation + returns signed JWT token.
+  - `POST /api/auth/login`: Credential validation + password verification + returns signed JWT token.
+  - `GET /api/auth/me`: Protected route returning active user context.
+- **Auth Middleware** ([`server/src/middleware/auth.js`](file:///c:/Users/user/OneDrive/Desktop/JustFans/server/src/middleware/auth.js)):
+  - `requireAuth`: Guards designated protected API endpoints (`POST /api/posts`, studio analytics, messages, subscriptions).
+  - `optionalAuth`: Allows anonymous feed browsing while attaching `req.user` if logged in.
+- **Frontend Authentication UI (Vanilla CSS)**:
+  - Form stylesheet ([`client/src/styles/auth.css`](file:///c:/Users/user/OneDrive/Desktop/JustFans/client/src/styles/auth.css)): Built strictly using vanilla CSS for clean, responsive, dark-mode form presentation.
+  - Auth Page ([`client/src/pages/AuthPage.jsx`](file:///c:/Users/user/OneDrive/Desktop/JustFans/client/src/pages/AuthPage.jsx)): Sign In and Sign Up tabs, validation messages, and quick one-click demo login buttons.
+  - Route Protection ([`client/src/components/ProtectedRoute.jsx`](file:///c:/Users/user/OneDrive/Desktop/JustFans/client/src/components/ProtectedRoute.jsx)): Restricts upload features (`/studio`), redirecting unauthenticated users to `/login`.
+  - Token Management: Auth token stored safely in `localStorage` and sent as `Bearer` header on all protected requests.
 
