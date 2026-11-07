@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   Heart, 
@@ -13,7 +13,9 @@ import {
 } from 'lucide-react';
 
 export default function PostCard({ post, onTip, onSubscribe }) {
-  const { updateBalance } = useAuth();
+  const { isAuthenticated, authFetch, updateBalance } = useAuth();
+  const navigate = useNavigate();
+
   const [likes, setLikes] = useState(post.likes || 0);
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(Boolean(post.isBookmarked));
@@ -23,9 +25,14 @@ export default function PostCard({ post, onTip, onSubscribe }) {
   const [isUnlocked, setIsUnlocked] = useState(post.hasAccess);
   const [unlocking, setUnlocking] = useState(false);
 
+  const requireLoginPrompt = () => {
+    navigate('/login');
+  };
+
   const handleLike = async () => {
+    if (!isAuthenticated) return requireLoginPrompt();
     try {
-      const res = await fetch(`/api/posts/${post.id}/like`, { method: 'POST' });
+      const res = await authFetch(`/api/posts/${post.id}/like`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         setLikes(data.likes);
@@ -37,8 +44,9 @@ export default function PostCard({ post, onTip, onSubscribe }) {
   };
 
   const handleBookmark = async () => {
+    if (!isAuthenticated) return requireLoginPrompt();
     try {
-      const res = await fetch(`/api/posts/${post.id}/bookmark`, { method: 'POST' });
+      const res = await authFetch(`/api/posts/${post.id}/bookmark`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         setIsBookmarked(data.isBookmarked);
@@ -50,10 +58,11 @@ export default function PostCard({ post, onTip, onSubscribe }) {
 
   const handleAddComment = async (e) => {
     e.preventDefault();
+    if (!isAuthenticated) return requireLoginPrompt();
     if (!commentText.trim()) return;
 
     try {
-      const res = await fetch(`/api/posts/${post.id}/comment`, {
+      const res = await authFetch(`/api/posts/${post.id}/comment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: commentText })
@@ -69,9 +78,10 @@ export default function PostCard({ post, onTip, onSubscribe }) {
   };
 
   const handleUnlockPost = async () => {
+    if (!isAuthenticated) return requireLoginPrompt();
     setUnlocking(true);
     try {
-      const res = await fetch(`/api/posts/${post.id}/unlock`, { method: 'POST' });
+      const res = await authFetch(`/api/posts/${post.id}/unlock`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         setIsUnlocked(true);
@@ -84,6 +94,16 @@ export default function PostCard({ post, onTip, onSubscribe }) {
     } finally {
       setUnlocking(false);
     }
+  };
+
+  const handleTipClick = () => {
+    if (!isAuthenticated) return requireLoginPrompt();
+    onTip(post);
+  };
+
+  const handleSubscribeClick = () => {
+    if (!isAuthenticated) return requireLoginPrompt();
+    onSubscribe(post.creator);
   };
 
   return (
@@ -117,8 +137,8 @@ export default function PostCard({ post, onTip, onSubscribe }) {
 
         {post.creator && (
           <button
-            onClick={() => onSubscribe(post.creator)}
-            className="text-xs font-bold text-[#00aff0] bg-[#00aff0]/10 hover:bg-[#00aff0]/20 border border-[#00aff0]/30 px-3.5 py-1.5 rounded-full transition"
+            onClick={handleSubscribeClick}
+            className="text-xs font-bold text-[#00aff0] bg-[#00aff0]/10 hover:bg-[#00aff0]/20 border border-[#00aff0]/30 px-3.5 py-1.5 rounded-full transition cursor-pointer"
           >
             {post.isSubscribed ? "Subscribed" : "Subscribe"}
           </button>
@@ -189,8 +209,8 @@ export default function PostCard({ post, onTip, onSubscribe }) {
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
                   type="button"
-                  onClick={() => onSubscribe(post.creator)}
-                  className="px-5 py-2.5 bg-[#00aff0] hover:bg-[#0094cc] text-black font-bold text-xs rounded-full shadow-lg transition"
+                  onClick={handleSubscribeClick}
+                  className="px-5 py-2.5 bg-[#00aff0] hover:bg-[#0094cc] text-black font-bold text-xs rounded-full shadow-lg transition cursor-pointer"
                 >
                   Subscribe for ${(post.creator?.monthlyPrice || 9.99).toFixed(2)}/mo
                 </button>
@@ -199,7 +219,7 @@ export default function PostCard({ post, onTip, onSubscribe }) {
                     type="button"
                     disabled={unlocking}
                     onClick={handleUnlockPost}
-                    className="px-5 py-2.5 bg-[#1f2638] hover:bg-[#2b354d] text-white border border-[#394663] font-bold text-xs rounded-full transition flex items-center gap-1.5"
+                    className="px-5 py-2.5 bg-[#1f2638] hover:bg-[#2b354d] text-white border border-[#394663] font-bold text-xs rounded-full transition flex items-center gap-1.5 cursor-pointer"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                     <span>{unlocking ? "Unlocking..." : `Unlock Post for $${post.priceToUnlock.toFixed(2)}`}</span>
@@ -219,7 +239,7 @@ export default function PostCard({ post, onTip, onSubscribe }) {
             {/* Like */}
             <button
               onClick={handleLike}
-              className={`flex items-center gap-1.5 text-sm font-semibold transition ${
+              className={`flex items-center gap-1.5 text-sm font-semibold transition cursor-pointer ${
                 isLiked ? 'text-rose-500' : 'text-gray-400 hover:text-rose-400'
               }`}
             >
@@ -230,7 +250,7 @@ export default function PostCard({ post, onTip, onSubscribe }) {
             {/* Comment Drawer Toggle */}
             <button
               onClick={() => setShowComments(!showComments)}
-              className="flex items-center gap-1.5 text-sm font-semibold text-gray-400 hover:text-[#00aff0] transition"
+              className="flex items-center gap-1.5 text-sm font-semibold text-gray-400 hover:text-[#00aff0] transition cursor-pointer"
             >
               <MessageCircle className="w-5 h-5" />
               <span>{comments.length}</span>
@@ -238,8 +258,8 @@ export default function PostCard({ post, onTip, onSubscribe }) {
 
             {/* Tip Button */}
             <button
-              onClick={() => onTip(post)}
-              className="flex items-center gap-1 text-sm font-bold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 px-3 py-1 rounded-full border border-amber-400/30 transition"
+              onClick={handleTipClick}
+              className="flex items-center gap-1 text-sm font-bold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 px-3 py-1 rounded-full border border-amber-400/30 transition cursor-pointer"
             >
               <DollarSign className="w-4 h-4 -mr-1" />
               <span>Tip</span>
@@ -252,7 +272,7 @@ export default function PostCard({ post, onTip, onSubscribe }) {
           {/* Bookmark */}
           <button
             onClick={handleBookmark}
-            className={`p-2 rounded-full transition ${
+            className={`p-2 rounded-full transition cursor-pointer ${
               isBookmarked ? 'text-[#00aff0] bg-[#00aff0]/15' : 'text-gray-400 hover:text-white hover:bg-[#1a2133]'
             }`}
           >
@@ -288,7 +308,7 @@ export default function PostCard({ post, onTip, onSubscribe }) {
             <form onSubmit={handleAddComment} className="flex gap-2 mt-2">
               <input
                 type="text"
-                placeholder="Write a supportive comment..."
+                placeholder={isAuthenticated ? "Write a supportive comment..." : "Log in to post a comment"}
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 className="flex-1 bg-[#0e121b] border border-[#273148] rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#00aff0]"
@@ -296,7 +316,7 @@ export default function PostCard({ post, onTip, onSubscribe }) {
               <button
                 type="submit"
                 disabled={!commentText.trim()}
-                className="px-3.5 py-2 bg-[#00aff0] disabled:opacity-40 text-black font-bold text-xs rounded-xl flex items-center justify-center transition"
+                className="px-3.5 py-2 bg-[#00aff0] disabled:opacity-40 text-black font-bold text-xs rounded-xl flex items-center justify-center transition cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
               </button>

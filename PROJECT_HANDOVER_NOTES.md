@@ -76,3 +76,4 @@ npm run dev:client
 ### 7. Instant Demo Persona Switcher & Test Wallet
 - **Identity Switcher** (in top navbar): Switch between **Alex Johnson (Fan / VIP Subscriber)**, **Aria Nova (Fitness Coach)**, **Marcus Cole (Music Producer)**, **Elena Rostova (Concept Artist)**, and **Kai Vance (Tech & Gaming)**.
 - **Test Wallet Top-Up**: Click wallet balance pill in the navbar to add \$25, \$50, or \$100 test credit to test purchases, tips, and unlocks.
+

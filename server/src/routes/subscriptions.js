@@ -1,12 +1,12 @@
 import express from 'express';
 import { mockUsers } from '../data/mockData.js';
-import { getCurrentUser } from './auth.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// GET /api/subscriptions/my
-router.get('/my', (req, res) => {
-  const currentUser = getCurrentUser();
+// GET /api/subscriptions/my (PROTECTED)
+router.get('/my', requireAuth, (req, res) => {
+  const currentUser = req.user;
   const subs = (currentUser.subscriptions || []).map(sub => {
     const creator = mockUsers.find(u => u.id === sub.creatorId);
     return {
@@ -28,8 +28,8 @@ router.get('/my', (req, res) => {
   });
 });
 
-// POST /api/subscriptions/subscribe
-router.post('/subscribe', (req, res) => {
+// POST /api/subscriptions/subscribe (PROTECTED)
+router.post('/subscribe', requireAuth, (req, res) => {
   const { creatorId, tierName, price } = req.body;
   const creator = mockUsers.find(u => u.id === creatorId && u.role === 'creator');
 
@@ -37,7 +37,7 @@ router.post('/subscribe', (req, res) => {
     return res.status(404).json({ success: false, message: "Creator not found." });
   }
 
-  const currentUser = getCurrentUser();
+  const currentUser = req.user;
   const subCost = Number(price) || creator.monthlyPrice || 9.99;
 
   if (currentUser.walletBalance < subCost) {
@@ -49,7 +49,6 @@ router.post('/subscribe', (req, res) => {
 
   if (!currentUser.subscriptions) currentUser.subscriptions = [];
 
-  // Check if already subscribed
   const existingIdx = currentUser.subscriptions.findIndex(s => s.creatorId === creatorId);
   const expiryDate = new Date();
   expiryDate.setDate(expiryDate.getDate() + 30);
@@ -78,10 +77,10 @@ router.post('/subscribe', (req, res) => {
   });
 });
 
-// POST /api/subscriptions/cancel
-router.post('/cancel', (req, res) => {
+// POST /api/subscriptions/cancel (PROTECTED)
+router.post('/cancel', requireAuth, (req, res) => {
   const { creatorId } = req.body;
-  const currentUser = getCurrentUser();
+  const currentUser = req.user;
 
   if (!currentUser.subscriptions) {
     return res.status(400).json({ success: false, message: "No active subscriptions." });

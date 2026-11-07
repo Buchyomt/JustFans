@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 export default function CreatorStudioPage() {
-  const { currentUser, switchDemo } = useAuth();
+  const { currentUser, authFetch, switchDemo } = useAuth();
   const [analytics, setAnalytics] = useState(null);
 
   // New post state
@@ -27,16 +27,13 @@ export default function CreatorStudioPage() {
 
   const fetchAnalytics = async () => {
     try {
-      setLoading(true);
-      const res = await fetch('/api/analytics/creator-studio');
+      const res = await authFetch('/api/analytics/creator-studio');
       const data = await res.json();
       if (data.success) {
         setAnalytics(data);
       }
     } catch (err) {
       console.error('Failed to load studio analytics:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -51,7 +48,7 @@ export default function CreatorStudioPage() {
     setSubmitting(true);
     setPublishSuccess(false);
     try {
-      const res = await fetch('/api/posts', {
+      const res = await authFetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
 import TipModal from '../components/TipModal';
@@ -14,7 +14,8 @@ import {
 
 export default function CreatorProfilePage() {
   const { username } = useParams();
-  const { currentUser } = useAuth();
+  const { currentUser, isAuthenticated, authFetch } = useAuth();
+  const navigate = useNavigate();
   
   const [creator, setCreator] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -30,7 +31,7 @@ export default function CreatorProfilePage() {
   const fetchCreatorProfile = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/creators/${username}`);
+      const res = await authFetch(`/api/creators/${username}`);
       const data = await res.json();
       if (data.success) {
         setCreator(data.creator);
@@ -49,9 +50,10 @@ export default function CreatorProfilePage() {
   }, [username, currentUser]);
 
   const handleFollow = async () => {
+    if (!isAuthenticated) return navigate('/login');
     if (!creator) return;
     try {
-      const res = await fetch(`/api/creators/${creator.id}/follow`, { method: 'POST' });
+      const res = await authFetch(`/api/creators/${creator.id}/follow`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         setIsFollowing(data.isFollowing);
@@ -146,7 +148,10 @@ export default function CreatorProfilePage() {
             </button>
 
             <button
-              onClick={() => setShowTipCreator(true)}
+              onClick={() => {
+                if (!isAuthenticated) return navigate('/login');
+                setShowTipCreator(true);
+              }}
               className="px-4 py-2.5 bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
             >
               <DollarSign className="w-4 h-4" />
@@ -154,7 +159,7 @@ export default function CreatorProfilePage() {
             </button>
 
             <Link
-              to={`/messages?creator=${creator.id}`}
+              to={isAuthenticated ? `/messages?creator=${creator.id}` : '/login'}
               className="px-4 py-2.5 bg-[#1a2133] hover:bg-[#252f47] text-white border border-[#2b354e] rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
             >
               <MessageSquare className="w-4 h-4 text-[#00aff0]" />
@@ -162,7 +167,10 @@ export default function CreatorProfilePage() {
             </Link>
 
             <button
-              onClick={() => setShowSubModal(true)}
+              onClick={() => {
+                if (!isAuthenticated) return navigate('/login');
+                setShowSubModal(true);
+              }}
               className="px-5 py-2.5 bg-[#00aff0] hover:bg-[#0094cc] text-black font-extrabold text-xs rounded-xl shadow-lg shadow-cyan-500/20 transition cursor-pointer"
             >
               {creator.isSubscribed ? "Manage Plan" : `Subscribe $${(creator.monthlyPrice || 9.99).toFixed(2)}/mo`}

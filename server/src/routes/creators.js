@@ -1,6 +1,6 @@
 import express from 'express';
 import { mockUsers, mockPosts } from '../data/mockData.js';
-import { getCurrentUser } from './auth.js';
+import { requireAuth, optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -31,7 +31,7 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/creators/:username
-router.get('/:username', (req, res) => {
+router.get('/:username', optionalAuth, (req, res) => {
   const { username } = req.params;
   const creator = mockUsers.find(u => u.role === 'creator' && (u.username.toLowerCase() === username.toLowerCase() || u.id === username));
 
@@ -40,26 +40,26 @@ router.get('/:username', (req, res) => {
   }
 
   const posts = mockPosts.filter(p => p.creatorId === creator.id);
-  const currentUser = getCurrentUser();
-  const isSubscribed = currentUser.subscriptions?.some(s => s.creatorId === creator.id);
-  const isFollowing = currentUser.following?.includes(creator.id);
+  const currentUser = req.user;
+  const isSubscribed = currentUser ? currentUser.subscriptions?.some(s => s.creatorId === creator.id) : false;
+  const isFollowing = currentUser ? currentUser.following?.includes(creator.id) : false;
 
   res.json({
     success: true,
     creator: {
       ...creator,
-      isSubscribed,
-      isFollowing,
+      isSubscribed: Boolean(isSubscribed),
+      isFollowing: Boolean(isFollowing),
       postsCount: posts.length
     },
     posts
   });
 });
 
-// POST /api/creators/:id/follow
-router.post('/:id/follow', (req, res) => {
+// POST /api/creators/:id/follow (PROTECTED)
+router.post('/:id/follow', requireAuth, (req, res) => {
   const { id } = req.params;
-  const currentUser = getCurrentUser();
+  const currentUser = req.user;
   if (!currentUser.following) currentUser.following = [];
 
   const index = currentUser.following.indexOf(id);

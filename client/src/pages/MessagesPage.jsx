@@ -13,7 +13,7 @@ export default function MessagesPage() {
   const [searchParams] = useSearchParams();
   const creatorParam = searchParams.get('creator');
 
-  const { currentUser, updateBalance } = useAuth();
+  const { currentUser, authFetch, updateBalance } = useAuth();
   const [threads, setThreads] = useState([]);
   const [activeThread, setActiveThread] = useState(null);
   const [inputText, setInputText] = useState('');
@@ -25,7 +25,7 @@ export default function MessagesPage() {
   const fetchThreads = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/messages');
+      const res = await authFetch('/api/messages');
       const data = await res.json();
       if (data.success) {
         setThreads(data.threads);
@@ -58,7 +58,7 @@ export default function MessagesPage() {
     setSending(true);
     try {
       const threadId = activeThread ? activeThread.id : creatorParam;
-      const res = await fetch(`/api/messages/${threadId}`, {
+      const res = await authFetch(`/api/messages/${threadId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -91,7 +91,7 @@ export default function MessagesPage() {
   const handleUnlockPPV = async (messageId) => {
     if (!activeThread) return;
     try {
-      const res = await fetch(`/api/messages/${activeThread.id}/unlock-ppv`, {
+      const res = await authFetch(`/api/messages/${activeThread.id}/unlock-ppv`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId })

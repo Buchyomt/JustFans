@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
 import TipModal from '../components/TipModal';
@@ -13,11 +13,13 @@ import {
   PlusCircle, 
   TrendingUp, 
   Flame, 
-  CheckCircle2 
+  CheckCircle2
 } from 'lucide-react';
 
 export default function FeedPage() {
-  const { currentUser } = useAuth();
+  const { currentUser, isAuthenticated, authFetch } = useAuth();
+  const navigate = useNavigate();
+
   const [posts, setPosts] = useState([]);
   const [creators, setCreators] = useState([]);
   const [filter, setFilter] = useState('all'); // all, subscribed, video, image
@@ -44,7 +46,7 @@ export default function FeedPage() {
       if (filter === 'subscribed') url += '?filter=subscribed';
       else if (filter === 'video' || filter === 'image') url += `?mediaType=${filter}`;
       
-      const res = await fetch(url);
+      const res = await authFetch(url);
       const data = await res.json();
       if (data.success) {
         setPosts(data.posts);
@@ -78,11 +80,15 @@ export default function FeedPage() {
 
   const handleCreatePost = async (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      navigate('/login?redirect=/studio');
+      return;
+    }
     if (!newTitle.trim()) return;
 
     setIsPosting(true);
     try {
-      const res = await fetch('/api/posts', {
+      const res = await authFetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -142,7 +148,36 @@ export default function FeedPage() {
           ))}
         </div>
 
-        {/* Creator Post Trigger (if creator) */}
+        {/* Unauthenticated User Welcome Banner */}
+        {!isAuthenticated && (
+          <div className="bg-gradient-to-r from-[#161c2b] via-[#1a2133] to-[#161c2b] border border-[#273148] rounded-3xl p-5 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-4 h-4 text-[#00aff0]" />
+                <h3 className="font-extrabold text-white text-sm">Join the JustFans Network</h3>
+              </div>
+              <p className="text-xs text-gray-400">
+                Sign in to follow creators, unlock exclusive 4K videos, send tips, or create a channel.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Link
+                to="/login"
+                className="flex-1 sm:flex-initial px-4 py-2 bg-[#1a2133] hover:bg-[#252f47] border border-[#2b354e] text-white font-bold text-xs rounded-xl text-center transition"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/signup"
+                className="flex-1 sm:flex-initial px-4 py-2 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-white font-extrabold text-xs rounded-xl text-center shadow-md transition"
+              >
+                Sign Up
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Creator Post Trigger (if creator) or Upload Action CTA */}
         {currentUser?.role === 'creator' && (
           <div className="bg-[#131722] border border-[#1f2638] rounded-3xl p-4 flex items-center justify-between gap-4 shadow-lg">
             <div className="flex items-center gap-3">
@@ -158,7 +193,7 @@ export default function FeedPage() {
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-[#00aff0] hover:bg-[#0094cc] text-black font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-md transition"
+              className="px-4 py-2 bg-[#00aff0] hover:bg-[#0094cc] text-black font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-md transition cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
               <span>Create Post</span>
@@ -216,7 +251,7 @@ export default function FeedPage() {
             <p className="text-xs text-gray-400 mb-4">Try switching filters or subscribe to creators to populate your personal feed.</p>
             <button
               onClick={() => setFilter('all')}
-              className="px-4 py-2 bg-[#00aff0] text-black font-bold text-xs rounded-xl"
+              className="px-4 py-2 bg-[#00aff0] text-black font-bold text-xs rounded-xl cursor-pointer"
             >
               Reset Filter
             </button>
@@ -269,8 +304,11 @@ export default function FeedPage() {
                   </div>
                 </Link>
                 <button
-                  onClick={() => setActiveSubCreator(c)}
-                  className="px-3 py-1 bg-[#00aff0]/10 hover:bg-[#00aff0] hover:text-black text-[#00aff0] font-bold text-xs rounded-full border border-[#00aff0]/30 transition"
+                  onClick={() => {
+                    if (!isAuthenticated) return navigate('/login');
+                    setActiveSubCreator(c);
+                  }}
+                  className="px-3 py-1 bg-[#00aff0]/10 hover:bg-[#00aff0] hover:text-black text-[#00aff0] font-bold text-xs rounded-full border border-[#00aff0]/30 transition cursor-pointer"
                 >
                   Join
                 </button>
@@ -413,14 +451,14 @@ export default function FeedPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 bg-transparent text-gray-400 hover:text-white text-xs font-semibold"
+                  className="px-4 py-2 bg-transparent text-gray-400 hover:text-white text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isPosting}
-                  className="px-5 py-2.5 bg-[#00aff0] text-black font-extrabold text-xs rounded-xl shadow-lg transition"
+                  className="px-5 py-2.5 bg-[#00aff0] text-black font-extrabold text-xs rounded-xl shadow-lg transition cursor-pointer"
                 >
                   {isPosting ? "Publishing..." : "Publish to Feed"}
                 </button>

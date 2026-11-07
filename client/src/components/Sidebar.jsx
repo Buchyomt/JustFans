@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   Home, 
@@ -7,11 +7,12 @@ import {
   UserCheck, 
   MessageSquare, 
   Bookmark, 
-  LayoutDashboard
+  LayoutDashboard,
+  LogIn
 } from 'lucide-react';
 
 export default function Sidebar() {
-  const { currentUser } = useAuth();
+  const { currentUser, isAuthenticated } = useAuth();
 
   const navLinks = [
     { to: '/', label: 'Home Feed', icon: Home },
@@ -59,8 +60,8 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* User Card at bottom of sidebar */}
-        {currentUser && (
+        {/* User Card at bottom of sidebar or Sign In CTA */}
+        {isAuthenticated && currentUser ? (
           <div className="pt-4 border-t border-[#1f2638]">
             <div className="flex items-center gap-3 p-3 bg-[#131722] rounded-2xl border border-[#273148]">
               <img
@@ -73,6 +74,20 @@ export default function Sidebar() {
                 <p className="text-[11px] text-gray-400 truncate">@{currentUser.username}</p>
               </div>
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></div>
+            </div>
+          </div>
+        ) : (
+          <div className="pt-4 border-t border-[#1f2638]">
+            <div className="p-3.5 bg-[#131722] rounded-2xl border border-[#273148] text-center">
+              <p className="text-xs font-bold text-white mb-1">Join JustFans</p>
+              <p className="text-[11px] text-gray-400 mb-3">Sign in to support creators and unlock 4K feeds.</p>
+              <Link
+                to="/login"
+                className="w-full py-2 bg-[#00aff0] text-black font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md transition"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </Link>
             </div>
           </div>
         )}

@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Check, X, ShieldCheck, Sparkles, Star } from 'lucide-react';
 
 export default function SubscribeModal({ creator, onClose, onSubscribeSuccess }) {
-  const { currentUser, updateBalance } = useAuth();
+  const { currentUser, authFetch, updateBalance } = useAuth();
   const [selectedTier, setSelectedTier] = useState(creator.tiers?.[0] || {
     name: "Standard Membership",
     price: creator.monthlyPrice || 9.99,
@@ -30,7 +30,7 @@ export default function SubscribeModal({ creator, onClose, onSubscribeSuccess })
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/subscriptions/subscribe', {
+      const res = await authFetch('/api/subscriptions/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -154,3 +154,4 @@ export default function SubscribeModal({ creator, onClose, onSubscribeSuccess })
     </div>
   );
 }
+

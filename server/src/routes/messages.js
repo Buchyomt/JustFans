@@ -1,12 +1,12 @@
 import express from 'express';
 import { mockMessages, mockUsers } from '../data/mockData.js';
-import { getCurrentUser } from './auth.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// GET /api/messages
-router.get('/', (req, res) => {
-  const currentUser = getCurrentUser();
+// GET /api/messages (PROTECTED)
+router.get('/', requireAuth, (req, res) => {
+  const currentUser = req.user;
 
   const userThreads = mockMessages.filter(t => 
     t.fanId === currentUser.id || t.creatorId === currentUser.id
@@ -40,15 +40,14 @@ router.get('/', (req, res) => {
   });
 });
 
-// POST /api/messages/:threadId
-router.post('/:threadId', (req, res) => {
+// POST /api/messages/:threadId (PROTECTED)
+router.post('/:threadId', requireAuth, (req, res) => {
   const { threadId } = req.params;
   const { text, tip, isLockedPPV, price, attachmentUrl } = req.body;
-  const currentUser = getCurrentUser();
+  const currentUser = req.user;
 
   let thread = mockMessages.find(t => t.id === threadId);
   if (!thread) {
-    // Check if threadId is actually a creatorId or fanId to start a new thread
     const creator = mockUsers.find(u => u.id === threadId || u.username === threadId);
     if (creator) {
       thread = {
@@ -95,11 +94,11 @@ router.post('/:threadId', (req, res) => {
   });
 });
 
-// POST /api/messages/:threadId/unlock-ppv
-router.post('/:threadId/unlock-ppv', (req, res) => {
+// POST /api/messages/:threadId/unlock-ppv (PROTECTED)
+router.post('/:threadId/unlock-ppv', requireAuth, (req, res) => {
   const { threadId } = req.params;
   const { messageId } = req.body;
-  const currentUser = getCurrentUser();
+  const currentUser = req.user;
 
   const thread = mockMessages.find(t => t.id === threadId);
   if (!thread) {

@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { DollarSign, X, Sparkles } from 'lucide-react';
 
 export default function TipModal({ post, creator, onClose, onTipSuccess }) {
-  const { currentUser, updateBalance } = useAuth();
+  const { currentUser, authFetch, updateBalance } = useAuth();
   const [amount, setAmount] = useState('10');
   const [customAmount, setCustomAmount] = useState('');
   const [message, setMessage] = useState('');
@@ -31,7 +31,7 @@ export default function TipModal({ post, creator, onClose, onTipSuccess }) {
     try {
       let endpoint = post ? `/api/posts/${post.id}/tip` : `/api/creators/${targetCreator.id}/tip`;
       
-      const res = await fetch(endpoint, {
+      const res = await authFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: finalAmount, message })

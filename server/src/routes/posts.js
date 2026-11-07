@@ -1,16 +1,16 @@
 import express from 'express';
 import { mockPosts, mockUsers } from '../data/mockData.js';
-import { getCurrentUser } from './auth.js';
+import { requireAuth, optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Helper to enrich post with creator details & viewer access
 const enrichPost = (post, currentUser) => {
   const creator = mockUsers.find(u => u.id === post.creatorId);
-  const isSubscribed = currentUser.subscriptions?.some(s => s.creatorId === post.creatorId);
-  const isCreatorSelf = currentUser.id === post.creatorId;
-  const isPurchased = post.unlockedUsers?.includes(currentUser.id);
-  const isBookmarked = currentUser.bookmarks?.includes(post.id);
+  const isSubscribed = currentUser?.subscriptions?.some(s => s.creatorId === post.creatorId);
+  const isCreatorSelf = currentUser?.id === post.creatorId;
+  const isPurchased = currentUser ? post.unlockedUsers?.includes(currentUser.id) : false;
+  const isBookmarked = currentUser?.bookmarks?.includes(post.id);
 
   // Content is accessible if it's free, viewer is subscribed, viewer bought PPV, or viewer is author
   const hasAccess = !post.isLocked || isSubscribed || isPurchased || isCreatorSelf;
@@ -18,7 +18,7 @@ const enrichPost = (post, currentUser) => {
   return {
     ...post,
     hasAccess,
-    isSubscribed,
+    isSubscribed: Boolean(isSubscribed),
     isBookmarked: Boolean(isBookmarked),
     creator: creator ? {
       id: creator.id,
@@ -31,10 +31,10 @@ const enrichPost = (post, currentUser) => {
   };
 };
 
-// GET /api/posts
-router.get('/', (req, res) => {
+// GET /api/posts - Viewable publicly with optional personalized auth context
+router.get('/', optionalAuth, (req, res) => {
   const { filter, creatorId, mediaType } = req.query;
-  const currentUser = getCurrentUser();
+  const currentUser = req.user;
 
   let posts = [...mockPosts];
 
@@ -46,12 +46,12 @@ router.get('/', (req, res) => {
     posts = posts.filter(p => p.mediaType === mediaType);
   }
 
-  if (filter === 'following') {
+  if (filter === 'following' && currentUser) {
     posts = posts.filter(p => currentUser.following?.includes(p.creatorId));
-  } else if (filter === 'subscribed') {
+  } else if (filter === 'subscribed' && currentUser) {
     const subCreatorIds = currentUser.subscriptions?.map(s => s.creatorId) || [];
     posts = posts.filter(p => subCreatorIds.includes(p.creatorId));
-  } else if (filter === 'bookmarked') {
+  } else if (filter === 'bookmarked' && currentUser) {
     posts = posts.filter(p => currentUser.bookmarks?.includes(p.id));
   }
 
@@ -68,22 +68,21 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/posts/:id
-router.get('/:id', (req, res) => {
+router.get('/:id', optionalAuth, (req, res) => {
   const post = mockPosts.find(p => p.id === req.params.id);
   if (!post) {
     return res.status(404).json({ success: false, message: "Post not found." });
   }
 
-  const currentUser = getCurrentUser();
   res.json({
     success: true,
-    post: enrichPost(post, currentUser)
+    post: enrichPost(post, req.user)
   });
 });
 
-// POST /api/posts
-router.post('/', (req, res) => {
-  const currentUser = getCurrentUser();
+// POST /api/posts - Upload/publish new post (PROTECTED by requireAuth)
+router.post('/', requireAuth, (req, res) => {
+  const currentUser = req.user;
   if (currentUser.role !== 'creator') {
     return res.status(403).json({ success: false, message: "Only creators can publish posts." });
   }
@@ -99,8 +98,8 @@ router.post('/', (req, res) => {
     creatorId: currentUser.id,
     title,
     caption: caption || "",
-    mediaType: mediaType || "image",
-    mediaUrl: mediaUrl || "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80",
+    mediaType: mediaType || "video",
+    mediaUrl: mediaUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
     thumbnail: thumbnail || mediaUrl || "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80",
     isLocked: Boolean(isLocked),
     requiredTier: requiredTier || (isLocked ? "Standard Fan" : "free"),
@@ -124,8 +123,8 @@ router.post('/', (req, res) => {
   });
 });
 
-// POST /api/posts/:id/like
-router.post('/:id/like', (req, res) => {
+// POST /api/posts/:id/like (PROTECTED)
+router.post('/:id/like', requireAuth, (req, res) => {
   const post = mockPosts.find(p => p.id === req.params.id);
   if (!post) {
     return res.status(404).json({ success: false, message: "Post not found." });
@@ -143,8 +142,8 @@ router.post('/:id/like', (req, res) => {
   });
 });
 
-// POST /api/posts/:id/comment
-router.post('/:id/comment', (req, res) => {
+// POST /api/posts/:id/comment (PROTECTED)
+router.post('/:id/comment', requireAuth, (req, res) => {
   const { text } = req.body;
   if (!text || !text.trim()) {
     return res.status(400).json({ success: false, message: "Comment text cannot be empty." });
@@ -155,7 +154,7 @@ router.post('/:id/comment', (req, res) => {
     return res.status(404).json({ success: false, message: "Post not found." });
   }
 
-  const currentUser = getCurrentUser();
+  const currentUser = req.user;
   const comment = {
     id: `c-${Date.now()}`,
     user: currentUser.username,
@@ -175,9 +174,9 @@ router.post('/:id/comment', (req, res) => {
   });
 });
 
-// POST /api/posts/:id/tip
-router.post('/:id/tip', (req, res) => {
-  const { amount, message } = req.body;
+// POST /api/posts/:id/tip (PROTECTED)
+router.post('/:id/tip', requireAuth, (req, res) => {
+  const { amount } = req.body;
   const tipAmount = Number(amount);
   if (!tipAmount || tipAmount <= 0) {
     return res.status(400).json({ success: false, message: "Invalid tip amount." });
@@ -188,7 +187,7 @@ router.post('/:id/tip', (req, res) => {
     return res.status(404).json({ success: false, message: "Post not found." });
   }
 
-  const currentUser = getCurrentUser();
+  const currentUser = req.user;
   if (currentUser.walletBalance < tipAmount) {
     return res.status(400).json({ success: false, message: "Insufficient balance in wallet." });
   }
@@ -204,14 +203,14 @@ router.post('/:id/tip', (req, res) => {
   });
 });
 
-// POST /api/posts/:id/unlock (Pay-Per-View unlock)
-router.post('/:id/unlock', (req, res) => {
+// POST /api/posts/:id/unlock (PROTECTED)
+router.post('/:id/unlock', requireAuth, (req, res) => {
   const post = mockPosts.find(p => p.id === req.params.id);
   if (!post) {
     return res.status(404).json({ success: false, message: "Post not found." });
   }
 
-  const currentUser = getCurrentUser();
+  const currentUser = req.user;
   const cost = post.priceToUnlock || 4.99;
 
   if (currentUser.walletBalance < cost) {
@@ -232,9 +231,9 @@ router.post('/:id/unlock', (req, res) => {
   });
 });
 
-// POST /api/posts/:id/bookmark
-router.post('/:id/bookmark', (req, res) => {
-  const currentUser = getCurrentUser();
+// POST /api/posts/:id/bookmark (PROTECTED)
+router.post('/:id/bookmark', requireAuth, (req, res) => {
+  const currentUser = req.user;
   if (!currentUser.bookmarks) currentUser.bookmarks = [];
 
   const postId = req.params.id;

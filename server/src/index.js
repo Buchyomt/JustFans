@@ -61,3 +61,4 @@ app.listen(PORT, () => {
   console.log(`🚀 JustFans Server running smoothly on http://localhost:${PORT}`);
   console.log(`📡 Health Check: http://localhost:${PORT}/api/health`);
 });
+

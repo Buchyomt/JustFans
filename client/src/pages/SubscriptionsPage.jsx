@@ -9,14 +9,14 @@ import {
 } from 'lucide-react';
 
 export default function SubscriptionsPage() {
-  const { currentUser, refreshUser } = useAuth();
+  const { currentUser, authFetch, refreshUser } = useAuth();
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchSubscriptions = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/subscriptions/my');
+      const res = await authFetch('/api/subscriptions/my');
       const data = await res.json();
       if (data.success) {
         setSubscriptions(data.subscriptions);
@@ -38,7 +38,7 @@ export default function SubscriptionsPage() {
     }
 
     try {
-      const res = await fetch('/api/subscriptions/cancel', {
+      const res = await authFetch('/api/subscriptions/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ creatorId })

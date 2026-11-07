@@ -6,7 +6,7 @@ import SubscribeModal from '../components/SubscribeModal';
 import { Bookmark } from 'lucide-react';
 
 export default function BookmarksPage() {
-  const { currentUser } = useAuth();
+  const { currentUser, authFetch } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTipPost, setActiveTipPost] = useState(null);
@@ -15,7 +15,7 @@ export default function BookmarksPage() {
   const fetchBookmarkedPosts = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/posts?filter=bookmarked');
+      const res = await authFetch('/api/posts?filter=bookmarked');
       const data = await res.json();
       if (data.success) {
         setPosts(data.posts);

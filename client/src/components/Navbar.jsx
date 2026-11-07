@@ -8,11 +8,14 @@ import {
   LayoutDashboard, 
   X, 
   Check, 
-  Sparkles 
+  Sparkles,
+  LogOut,
+  LogIn,
+  UserPlus
 } from 'lucide-react';
 
 export default function Navbar() {
-  const { currentUser, switchDemo, updateBalance } = useAuth();
+  const { currentUser, isAuthenticated, logout, switchDemo, updateBalance } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showSwitchMenu, setShowSwitchMenu] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
@@ -75,95 +78,131 @@ export default function Navbar() {
           {/* Right actions */}
           <div className="flex items-center gap-3">
             
-            {/* Wallet button */}
-            <button
-              onClick={() => setShowWalletModal(true)}
-              className="flex items-center gap-2 bg-[#161c2b] hover:bg-[#1f283d] border border-[#273148] rounded-full px-3.5 py-1.5 transition text-sm cursor-pointer group"
-              title="Click to add test wallet funds"
-            >
-              <Wallet className="w-4 h-4 text-[#00aff0] group-hover:scale-110 transition-transform" />
-              <span className="font-semibold text-white">
-                ${(currentUser?.walletBalance || 0).toFixed(2)}
-              </span>
-              <span className="hidden sm:inline text-xs text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded-full font-bold">+</span>
-            </button>
+            {isAuthenticated ? (
+              <>
+                {/* Wallet button */}
+                <button
+                  onClick={() => setShowWalletModal(true)}
+                  className="flex items-center gap-2 bg-[#161c2b] hover:bg-[#1f283d] border border-[#273148] rounded-full px-3.5 py-1.5 transition text-sm cursor-pointer group"
+                  title="Click to add test wallet funds"
+                >
+                  <Wallet className="w-4 h-4 text-[#00aff0] group-hover:scale-110 transition-transform" />
+                  <span className="font-semibold text-white">
+                    ${(currentUser?.walletBalance || 0).toFixed(2)}
+                  </span>
+                  <span className="hidden sm:inline text-xs text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded-full font-bold">+</span>
+                </button>
 
-            {/* Studio button (if creator) or explore studio */}
-            {currentUser?.role === 'creator' ? (
-              <Link
-                to="/studio"
-                className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-[#8b5cf6] to-[#00aff0] hover:opacity-95 text-white font-semibold text-xs px-3.5 py-2 rounded-full shadow-md shadow-purple-500/20 transition cursor-pointer"
-              >
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                <span>Creator Studio</span>
-              </Link>
-            ) : (
-              <Link
-                to="/explore"
-                className="hidden sm:flex items-center gap-1.5 bg-[#161c2b] hover:bg-[#1f283d] border border-[#273148] text-gray-200 text-xs font-semibold px-3.5 py-2 rounded-full transition cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Discover</span>
-              </Link>
-            )}
+                {/* Studio button (if creator) or explore */}
+                {currentUser?.role === 'creator' ? (
+                  <Link
+                    to="/studio"
+                    className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-[#8b5cf6] to-[#00aff0] hover:opacity-95 text-white font-semibold text-xs px-3.5 py-2 rounded-full shadow-md shadow-purple-500/20 transition cursor-pointer"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    <span>Upload Studio</span>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/explore"
+                    className="hidden sm:flex items-center gap-1.5 bg-[#161c2b] hover:bg-[#1f283d] border border-[#273148] text-gray-200 text-xs font-semibold px-3.5 py-2 rounded-full transition cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Discover</span>
+                  </Link>
+                )}
 
-            {/* Demo Account Switcher Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowSwitchMenu(!showSwitchMenu)}
-                className="flex items-center gap-2 bg-[#161c2b] hover:bg-[#1e2538] border border-[#273148] rounded-full p-1 sm:pr-3 transition cursor-pointer"
-              >
-                <img
-                  src={currentUser?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"}
-                  alt={currentUser?.name || "User"}
-                  className="w-7 h-7 rounded-full object-cover border border-[#00aff0]/50"
-                />
-                <span className="hidden sm:inline text-xs font-medium text-gray-200 truncate max-w-[100px]">
-                  {currentUser?.name?.split(' ')[0]}
-                </span>
-                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-[#00aff0]/20 text-[#00aff0] hidden sm:inline">
-                  {currentUser?.role}
-                </span>
-              </button>
+                {/* Account & Demo Menu */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowSwitchMenu(!showSwitchMenu)}
+                    className="flex items-center gap-2 bg-[#161c2b] hover:bg-[#1e2538] border border-[#273148] rounded-full p-1 sm:pr-3 transition cursor-pointer"
+                  >
+                    <img
+                      src={currentUser?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"}
+                      alt={currentUser?.name || "User"}
+                      className="w-7 h-7 rounded-full object-cover border border-[#00aff0]/50"
+                    />
+                    <span className="hidden sm:inline text-xs font-medium text-gray-200 truncate max-w-[100px]">
+                      {currentUser?.name?.split(' ')[0]}
+                    </span>
+                    <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-[#00aff0]/20 text-[#00aff0] hidden sm:inline">
+                      {currentUser?.role}
+                    </span>
+                  </button>
 
-              {showSwitchMenu && (
-                <div className="absolute right-0 mt-2 w-72 bg-[#131722] border border-[#262c3d] rounded-2xl shadow-2xl p-2 z-50">
-                  <div className="px-3 py-2 border-b border-[#262c3d]/60 mb-1">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Switch Test Identity</p>
-                    <p className="text-[11px] text-gray-500">Test platform as fan or top creators</p>
-                  </div>
-                  <div className="space-y-1">
-                    {demoAccounts.map((acc) => (
-                      <button
-                        key={acc.id}
-                        onClick={() => {
-                          switchDemo(acc.id);
-                          setShowSwitchMenu(false);
-                        }}
-                        className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition cursor-pointer ${
-                          currentUser?.id === acc.id ? 'bg-[#00aff0]/15 border border-[#00aff0]/40' : 'hover:bg-[#1a2030]'
-                        }`}
-                      >
-                        <div>
-                          <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                            {acc.name}
-                            <span className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${
-                              acc.role === 'creator' ? 'bg-purple-900/60 text-purple-300' : 'bg-blue-900/60 text-blue-300'
-                            }`}>
-                              {acc.role}
-                            </span>
-                          </p>
-                          <p className="text-[11px] text-gray-400">{acc.tag}</p>
-                        </div>
-                        {currentUser?.id === acc.id && (
-                          <Check className="w-4 h-4 text-[#00aff0]" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                  {showSwitchMenu && (
+                    <div className="absolute right-0 mt-2 w-72 bg-[#131722] border border-[#262c3d] rounded-2xl shadow-2xl p-2 z-50">
+                      <div className="px-3 py-2 border-b border-[#262c3d]/60 mb-1">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Switch Test Identity</p>
+                        <p className="text-[11px] text-gray-500">Fast one-click persona switching</p>
+                      </div>
+                      <div className="space-y-1 mb-2">
+                        {demoAccounts.map((acc) => (
+                          <button
+                            key={acc.id}
+                            onClick={() => {
+                              switchDemo(acc.id);
+                              setShowSwitchMenu(false);
+                            }}
+                            className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition cursor-pointer ${
+                              currentUser?.id === acc.id ? 'bg-[#00aff0]/15 border border-[#00aff0]/40' : 'hover:bg-[#1a2030]'
+                            }`}
+                          >
+                            <div>
+                              <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                                {acc.name}
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${
+                                  acc.role === 'creator' ? 'bg-purple-900/60 text-purple-300' : 'bg-blue-900/60 text-blue-300'
+                                }`}>
+                                  {acc.role}
+                                </span>
+                              </p>
+                              <p className="text-[11px] text-gray-400">{acc.tag}</p>
+                            </div>
+                            {currentUser?.id === acc.id && (
+                              <Check className="w-4 h-4 text-[#00aff0]" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Log out */}
+                      <div className="pt-1 border-t border-[#262c3d]/60">
+                        <button
+                          onClick={() => {
+                            logout();
+                            setShowSwitchMenu(false);
+                          }}
+                          className="w-full flex items-center gap-2 p-2 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-950/40 transition cursor-pointer"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Log Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              /* Unauthenticated Nav Actions */
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-xs font-bold text-gray-300 hover:text-white transition flex items-center gap-1.5"
+                >
+                  <LogIn className="w-4 h-4 text-[#00aff0]" />
+                  <span>Log In</span>
+                </Link>
+                <Link
+                  to="/signup"
+                  className="px-4 py-2 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-white font-extrabold text-xs rounded-full shadow-lg shadow-cyan-500/20 hover:opacity-95 transition flex items-center gap-1.5"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Sign Up</span>
+                </Link>
+              </div>
+            )}
 
           </div>
 
@@ -210,7 +249,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={handleAddFunds}
-              className="w-full py-3 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-white font-bold rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-95 transition"
+              className="w-full py-3 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-white font-bold rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-95 transition cursor-pointer"
             >
               Deposit ${fundsToAdd}.00
             </button>
