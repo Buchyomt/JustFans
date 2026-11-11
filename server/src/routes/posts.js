@@ -1,6 +1,10 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 import { mockPosts, mockUsers } from '../data/mockData.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
+import { UPLOAD_DIR } from '../middleware/upload.js';
+import { Video } from '../models/Video.js';
 
 const router = express.Router();
 
@@ -253,6 +257,55 @@ router.post('/:id/bookmark', requireAuth, (req, res) => {
     isBookmarked,
     bookmarks: currentUser.bookmarks
   });
+});
+
+// DELETE /api/posts/:id (PROTECTED - Creator self or Admin)
+router.delete('/:id', requireAuth, (req, res) => {
+  try {
+    const postIdx = mockPosts.findIndex(p => p.id === req.params.id);
+    if (postIdx === -1) {
+      return res.status(404).json({ success: false, message: "Post not found." });
+    }
+
+    const post = mockPosts[postIdx];
+    const currentUser = req.user;
+
+    // Check ownership
+    if (post.creatorId !== currentUser.id && currentUser.role !== 'admin') {
+      return res.status(403).json({ success: false, message: "You can only delete your own posts." });
+    }
+
+    // If local uploaded file, delete it from disk
+    if (post.mediaUrl && post.mediaUrl.startsWith('/uploads/videos/')) {
+      const filename = path.basename(post.mediaUrl);
+      const filePath = path.join(UPLOAD_DIR, filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlink(filePath, () => {});
+      }
+    }
+
+    // Also remove from Video catalog if present
+    const videoEntry = Video.findAll().find(v => v.videoUrl === post.mediaUrl);
+    if (videoEntry) {
+      Video.delete(videoEntry.id, currentUser.id);
+    }
+
+    // Remove from mockPosts array
+    mockPosts.splice(postIdx, 1);
+
+    if (currentUser.postCount && currentUser.postCount > 0) {
+      currentUser.postCount -= 1;
+    }
+
+    return res.json({
+      success: true,
+      message: "Post deleted successfully.",
+      postId: req.params.id
+    });
+  } catch (err) {
+    console.error('[Delete Post Error]:', err);
+    return res.status(500).json({ success: false, message: "Failed to delete post." });
+  }
 });
 
 export default router;

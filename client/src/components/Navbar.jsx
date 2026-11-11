@@ -75,6 +75,15 @@ export default function Navbar() {
             />
           </form>
 
+          {/* Quick link to Star Creator */}
+          <Link
+            to="/creator/aria_fit"
+            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-950/50 border border-cyan-700/40 text-cyan-300 hover:text-white hover:border-[#00aff0] text-xs font-bold transition flex-shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <span>⭐ Star Channel</span>
+          </Link>
+
           {/* Right actions */}
           <div className="flex items-center gap-3">
             

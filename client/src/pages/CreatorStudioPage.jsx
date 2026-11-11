@@ -13,13 +13,15 @@ import {
   Film,
   Video as VideoIcon,
   X,
-  Play
+  Play,
+  Trash2
 } from 'lucide-react';
 
 export default function CreatorStudioPage() {
   const { currentUser, authFetch, switchDemo } = useAuth();
   const [analytics, setAnalytics] = useState(null);
   const [uploadedVideos, setUploadedVideos] = useState([]);
+  const [previewVideo, setPreviewVideo] = useState(null);
 
   // New post / video state
   const [title, setTitle] = useState('');
@@ -58,6 +60,26 @@ export default function CreatorStudioPage() {
       }
     } catch (err) {
       console.error('Failed to load uploaded videos:', err);
+    }
+  };
+
+  const handleDeleteVideo = async (vidId, vidTitle) => {
+    if (!window.confirm(`Are you sure you want to delete "${vidTitle}"? This will delete the raw video file and remove its post from the feed.`)) {
+      return;
+    }
+    try {
+      const res = await authFetch(`/api/videos/${vidId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setUploadedVideos(prev => prev.filter(v => v.id !== vidId));
+        if (previewVideo?.id === vidId) setPreviewVideo(null);
+        fetchAnalytics();
+      } else {
+        alert(data.message || 'Failed to delete video');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Failed to delete video.');
     }
   };
 
@@ -481,31 +503,93 @@ export default function CreatorStudioPage() {
                 <div className="space-y-3">
                   {uploadedVideos.map((vid) => (
                     <div key={vid.id} className="p-3 bg-[#181e2b] border border-[#273148] rounded-2xl flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div 
+                        onClick={() => setPreviewVideo(vid)}
+                        className="flex items-center gap-3 min-w-0 cursor-pointer group"
+                      >
                         <div className="w-16 h-10 bg-black rounded-lg overflow-hidden flex-shrink-0 relative">
-                          <img src={vid.thumbnail} alt={vid.title} className="w-full h-full object-cover opacity-80" />
-                          <Play className="w-4 h-4 text-white absolute inset-0 m-auto fill-white" />
+                          <img src={vid.thumbnail} alt={vid.title} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform" />
+                          <div className="absolute inset-0 m-auto w-6 h-6 rounded-full bg-cyan-500/80 flex items-center justify-center">
+                            <Play className="w-3 h-3 text-black fill-black ml-0.5" />
+                          </div>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-white truncate">{vid.title}</p>
+                          <p className="text-xs font-bold text-white truncate group-hover:text-[#00aff0] transition-colors">{vid.title}</p>
                           <p className="text-[11px] text-gray-400 truncate">
                             By @{vid.uploader?.username || 'creator'} · {vid.videoUrl.startsWith('/uploads') ? 'Local Multer Storage' : 'Cloud Stream'}
                           </p>
                         </div>
                       </div>
 
-                      <a
-                        href={vid.videoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3 py-1 bg-[#00aff0]/10 hover:bg-[#00aff0] hover:text-black text-[#00aff0] text-xs font-bold rounded-lg border border-[#00aff0]/30 transition"
-                      >
-                        Watch
-                      </a>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewVideo(vid)}
+                          className="px-3 py-1.5 bg-[#00aff0]/10 hover:bg-[#00aff0] hover:text-black text-[#00aff0] text-xs font-bold rounded-xl border border-[#00aff0]/30 transition cursor-pointer flex items-center gap-1"
+                        >
+                          <Play className="w-3 h-3 fill-current" />
+                          <span>Play</span>
+                        </button>
+                        
+                        {(currentUser?.id === vid.uploaderId || currentUser?.role === 'admin') && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteVideo(vid.id, vid.title)}
+                            title="Delete video file and feed post"
+                            className="p-1.5 text-gray-400 hover:text-rose-400 hover:bg-rose-950/40 rounded-xl border border-transparent hover:border-rose-900/40 transition cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* In-Studio Video Playback Modal */}
+          {previewVideo && (
+            <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-[#131722] border border-[#2b354e] rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl space-y-4 p-5">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-bold text-white truncate">{previewVideo.title}</h4>
+                    <p className="text-xs text-gray-400">Direct Local Video Playback</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewVideo(null)}
+                    className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#1f2638] transition cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="aspect-video w-full bg-black rounded-2xl overflow-hidden flex items-center justify-center">
+                  <video
+                    src={previewVideo.videoUrl}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-contain"
+                  >
+                    <source src={previewVideo.videoUrl} />
+                    Your browser does not support HTML5 video.
+                  </video>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-[#1f2638]">
+                  <span>Source: {previewVideo.videoUrl}</span>
+                  <button
+                    onClick={() => setPreviewVideo(null)}
+                    className="px-4 py-1.5 bg-[#1f2638] hover:bg-[#2b354e] text-white rounded-xl font-bold transition cursor-pointer"
+                  >
+                    Close Preview
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

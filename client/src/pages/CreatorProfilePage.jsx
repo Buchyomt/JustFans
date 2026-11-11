@@ -275,6 +275,7 @@ export default function CreatorProfilePage() {
                 post={{ ...post, creator }}
                 onTip={(p) => setActiveTipPost(p)}
                 onSubscribe={() => setShowSubModal(true)}
+                onDelete={(postId) => setPosts(prev => prev.filter(p => p.id !== postId))}
               />
             ))}
           </div>

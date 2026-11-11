@@ -9,11 +9,12 @@ import {
   Lock, 
   CheckCircle2, 
   Send, 
-  Sparkles
+  Sparkles,
+  Trash2
 } from 'lucide-react';
 
-export default function PostCard({ post, onTip, onSubscribe }) {
-  const { isAuthenticated, authFetch, updateBalance } = useAuth();
+export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
+  const { currentUser, isAuthenticated, authFetch, updateBalance } = useAuth();
   const navigate = useNavigate();
 
   const [likes, setLikes] = useState(post.likes || 0);
@@ -106,6 +107,24 @@ export default function PostCard({ post, onTip, onSubscribe }) {
     onSubscribe(post.creator);
   };
 
+  const isOwner = currentUser && (currentUser.id === post.creatorId || currentUser.id === post.creator?.id || currentUser.role === 'admin');
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Are you sure you want to delete "${post.title}"?`)) return;
+    try {
+      const res = await authFetch(`/api/posts/${post.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        if (onDelete) onDelete(post.id);
+      } else {
+        alert(data.message || 'Failed to delete post');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Failed to delete post.');
+    }
+  };
+
   return (
     <article className="bg-[#131722] border border-[#1f2638] rounded-3xl overflow-hidden shadow-xl hover:border-[#2b354d] transition-all">
       
@@ -135,14 +154,27 @@ export default function PostCard({ post, onTip, onSubscribe }) {
           </div>
         </Link>
 
-        {post.creator && (
-          <button
-            onClick={handleSubscribeClick}
-            className="text-xs font-bold text-[#00aff0] bg-[#00aff0]/10 hover:bg-[#00aff0]/20 border border-[#00aff0]/30 px-3.5 py-1.5 rounded-full transition cursor-pointer"
-          >
-            {post.isSubscribed ? "Subscribed" : "Subscribe"}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isOwner && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              title="Delete post"
+              className="p-2 text-gray-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-xl transition cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+
+          {post.creator && !isOwner && (
+            <button
+              onClick={handleSubscribeClick}
+              className="text-xs font-bold text-[#00aff0] bg-[#00aff0]/10 hover:bg-[#00aff0]/20 border border-[#00aff0]/30 px-3.5 py-1.5 rounded-full transition cursor-pointer"
+            >
+              {post.isSubscribed ? "Subscribed" : "Subscribe"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Post Text / Title */}
@@ -168,14 +200,16 @@ export default function PostCard({ post, onTip, onSubscribe }) {
       <div className="relative bg-black w-full overflow-hidden border-y border-[#1f2638]">
         {isUnlocked ? (
           post.mediaType === 'video' ? (
-            <div className="relative aspect-video w-full bg-black">
+            <div className="relative aspect-video w-full bg-black flex items-center justify-center">
               <video
+                src={post.mediaUrl}
                 controls
                 playsInline
+                preload="metadata"
                 poster={post.thumbnail}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain bg-black"
               >
-                <source src={post.mediaUrl} type="video/mp4" />
+                <source src={post.mediaUrl} />
                 Your browser does not support HTML5 video.
               </video>
             </div>

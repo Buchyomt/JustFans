@@ -187,6 +187,15 @@ router.delete('/:id', requireAuth, (req, res) => {
 
     Video.delete(req.params.id, req.user.id);
 
+    // Also remove corresponding post from mockPosts feed
+    const postIdx = mockPosts.findIndex(p => p.mediaUrl === video.videoUrl);
+    if (postIdx !== -1) {
+      mockPosts.splice(postIdx, 1);
+      if (req.user.postCount > 0) {
+        req.user.postCount -= 1;
+      }
+    }
+
     return res.json({
       success: true,
       message: 'Video deleted successfully.'

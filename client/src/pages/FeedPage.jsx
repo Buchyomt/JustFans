@@ -22,8 +22,11 @@ export default function FeedPage() {
 
   const [posts, setPosts] = useState([]);
   const [creators, setCreators] = useState([]);
-  const [filter, setFilter] = useState('all'); // all, subscribed, video, image
+  const [filter, setFilter] = useState('all'); // star, all, community, subscribed, video, image
   const [loading, setLoading] = useState(true);
+
+  // Identify featured star creator (primary flagship brand)
+  const starCreator = creators.find(c => c.id === 'creator-1') || creators[0];
 
   // Modals state
   const [activeTipPost, setActiveTipPost] = useState(null);
@@ -43,13 +46,22 @@ export default function FeedPage() {
     try {
       setLoading(true);
       let url = '/api/posts';
-      if (filter === 'subscribed') url += '?filter=subscribed';
-      else if (filter === 'video' || filter === 'image') url += `?mediaType=${filter}`;
+      if (filter === 'star' && starCreator) {
+        url += `?creatorId=${starCreator.id}`;
+      } else if (filter === 'subscribed') {
+        url += '?filter=subscribed';
+      } else if (filter === 'video' || filter === 'image') {
+        url += `?mediaType=${filter}`;
+      }
       
       const res = await authFetch(url);
       const data = await res.json();
       if (data.success) {
-        setPosts(data.posts);
+        let list = data.posts;
+        if (filter === 'community' && starCreator) {
+          list = list.filter(p => p.creatorId !== starCreator.id);
+        }
+        setPosts(list);
       }
     } catch (err) {
       console.error('Failed to load posts:', err);
@@ -71,12 +83,12 @@ export default function FeedPage() {
   };
 
   useEffect(() => {
-    fetchFeed();
-  }, [filter, currentUser]);
-
-  useEffect(() => {
     fetchCreators();
   }, []);
+
+  useEffect(() => {
+    fetchFeed();
+  }, [filter, currentUser, creators.length]);
 
   const handleCreatePost = async (e) => {
     e.preventDefault();
@@ -201,13 +213,67 @@ export default function FeedPage() {
           </div>
         )}
 
+        {/* Featured Star Creator Spotlight Card */}
+        {starCreator && (
+          <div className="bg-gradient-to-r from-[#141926] via-[#172033] to-[#141926] border border-[#26334d] rounded-3xl p-5 shadow-xl relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <Link to={`/creator/${starCreator.username}`} className="relative group flex-shrink-0">
+                  <img
+                    src={starCreator.avatar}
+                    alt={starCreator.name}
+                    className="w-14 h-14 rounded-2xl object-cover border-2 border-[#00aff0] shadow-md group-hover:scale-105 transition-transform"
+                  />
+                  <span className="absolute -bottom-1 -right-1 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-black text-[9px] font-black px-1.5 py-0.2 rounded-full shadow">
+                    STAR
+                  </span>
+                </Link>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h2 className="text-sm sm:text-base font-extrabold text-white truncate">{starCreator.name}</h2>
+                    <CheckCircle2 className="w-4 h-4 text-[#00aff0] fill-[#00aff0]/20 flex-shrink-0" />
+                    <span className="text-[10px] font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded-full border border-cyan-800/40">
+                      Featured Star
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-300 line-clamp-1 mt-0.5">{starCreator.bio}</p>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    <span className="text-white font-semibold">{starCreator.subscriberCount?.toLocaleString() || '4,820'}</span> subscribers · <span className="text-cyan-400 font-semibold">${starCreator.monthlyPrice || 14.99}</span>/mo
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setFilter('star')}
+                  className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer ${
+                    filter === 'star'
+                      ? 'bg-[#00aff0] text-black shadow-md shadow-cyan-500/25'
+                      : 'bg-[#1b2336] hover:bg-[#25304a] text-cyan-300 border border-[#2b3956]'
+                  }`}
+                >
+                  ⭐ Star Feed
+                </button>
+                <Link
+                  to={`/creator/${starCreator.username}`}
+                  className="px-3.5 py-1.5 bg-[#1b2336] hover:bg-[#25304a] border border-[#2b3956] text-white font-bold text-xs rounded-xl transition"
+                >
+                  Channel
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Feed Filters Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {[
-            { id: 'all', label: 'All Content', icon: Flame },
-            { id: 'subscribed', label: 'Subscribed Only', icon: Users },
-            { id: 'video', label: 'HD Videos', icon: Video },
-            { id: 'image', label: 'Photos & Art', icon: ImageIcon }
+            { id: 'star', label: '⭐ Star Channel', icon: Sparkles },
+            { id: 'all', label: '🔥 All Creators', icon: Flame },
+            { id: 'community', label: '🌐 Community', icon: Users },
+            { id: 'video', label: '🎬 HD Videos', icon: Video },
+            { id: 'subscribed', label: '🔒 Subscribed', icon: CheckCircle2 }
           ].map((tab) => {
             const Icon = tab.icon;
             const active = filter === tab.id;
@@ -264,6 +330,7 @@ export default function FeedPage() {
                 post={post}
                 onTip={(p) => setActiveTipPost(p)}
                 onSubscribe={(c) => setActiveSubCreator(c)}
+                onDelete={(postId) => setPosts(prev => prev.filter(p => p.id !== postId))}
               />
             ))}
           </div>
