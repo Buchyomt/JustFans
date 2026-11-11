@@ -91,3 +91,23 @@ npm run dev:client
   - Route Protection ([`client/src/components/ProtectedRoute.jsx`](file:///c:/Users/user/OneDrive/Desktop/JustFans/client/src/components/ProtectedRoute.jsx)): Restricts upload features (`/studio`), redirecting unauthenticated users to `/login`.
   - Token Management: Auth token stored safely in `localStorage` and sent as `Bearer` header on all protected requests.
 
+### 8. Video Storage & Management Engine (Multer & Streaming)
+- **Video Model** ([`server/src/models/Video.js`](file:///c:/Users/user/OneDrive/Desktop/JustFans/server/src/models/Video.js)):
+  - Fields: `id`, `title`, `description`, `videoUrl`, `uploaderId`, `createdAt`, `thumbnail`, `fileSize`, `mimeType`, and `views`.
+  - Enriches records with uploader identity (`name`, `username`, `avatar`, `verified`, `category`).
+- **Multer Upload Middleware** ([`server/src/middleware/upload.js`](file:///c:/Users/user/OneDrive/Desktop/JustFans/server/src/middleware/upload.js)):
+  - Disk storage targeting `server/uploads/videos/`.
+  - Format validation strictly enforcing common video formats: **MP4, MOV, WebM, MKV**.
+  - File size safety limit: 150MB with custom error handling.
+- **REST Endpoints** ([`server/src/routes/videos.js`](file:///c:/Users/user/OneDrive/Desktop/JustFans/server/src/routes/videos.js)):
+  - `GET /api/videos`: Public endpoint to fetch all uploaded videos with full uploader details.
+  - `GET /api/videos/:id`: Single video detail and view incrementer.
+  - `POST /api/videos`: Protected endpoint (`requireAuth`) extracting `uploaderId` from JWT, saving raw file to disk, and writing metadata to database.
+  - `DELETE /api/videos/:id`: Protected endpoint for creators to delete their own video and unlinks file from disk.
+- **Express Static Serving** ([`server/src/index.js`](file:///c:/Users/user/OneDrive/Desktop/JustFans/server/src/index.js)):
+  - Serves uploaded videos from `/uploads/videos/` with native HTTP byte-range request support (`Accept-Ranges: bytes`) for smooth seekable video playback.
+- **Creator Studio Upload UI** ([`client/src/pages/CreatorStudioPage.jsx`](file:///c:/Users/user/OneDrive/Desktop/JustFans/client/src/pages/CreatorStudioPage.jsx)):
+  - File selector supporting MP4, MOV, and WebM.
+  - Multipart form submission directly to `POST /api/videos`.
+  - "Video Storage Catalog" view tab listing hosted videos with direct playback links.
+

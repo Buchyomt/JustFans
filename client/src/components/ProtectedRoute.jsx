@@ -53,3 +53,4 @@ export default function ProtectedRoute({ children, requireCreator = false }) {
 
   return children;
 }
+

@@ -21,6 +21,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Uploaded media files
+uploads/
+server/uploads/
+
 # Editor & OS files
 .DS_Store
 Thumbs.db
