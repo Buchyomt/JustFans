@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
     fetchCurrentUser();
   }, []);
 
-  // Signup action
+  // Signup action (direct fallback)
   const signup = async (formData) => {
     try {
       const res = await fetch('/api/auth/signup', {
@@ -70,6 +70,57 @@ export const AuthProvider = ({ children }) => {
       return { success: false, message: data.message || 'Signup failed' };
     } catch {
       return { success: false, message: 'Network connection failed during signup' };
+    }
+  };
+
+  // Step 1: Request 6-digit email OTP
+  const requestSignupCode = async (formData) => {
+    try {
+      const res = await fetch('/api/auth/signup/request-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+      return data;
+    } catch {
+      return { success: false, message: 'Could not connect to verification service.' };
+    }
+  };
+
+  // Step 2: Verify 6-digit email OTP
+  const verifySignupCode = async (email, code) => {
+    try {
+      const res = await fetch('/api/auth/signup/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code })
+      });
+      const data = await res.json();
+      if (data.success && data.token) {
+        localStorage.setItem(TOKEN_KEY, data.token);
+        setToken(data.token);
+        setCurrentUser(data.user);
+        return { success: true, user: data.user };
+      }
+      return { success: false, message: data.message || 'Verification failed.' };
+    } catch {
+      return { success: false, message: 'Verification request failed. Please check network.' };
+    }
+  };
+
+  // Resend 6-digit email OTP
+  const resendSignupCode = async (email) => {
+    try {
+      const res = await fetch('/api/auth/signup/resend-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      return data;
+    } catch {
+      return { success: false, message: 'Failed to resend code.' };
     }
   };
 
@@ -134,6 +185,9 @@ export const AuthProvider = ({ children }) => {
       loading,
       login,
       signup,
+      requestSignupCode,
+      verifySignupCode,
+      resendSignupCode,
       logout,
       authFetch,
       refreshUser: fetchCurrentUser,

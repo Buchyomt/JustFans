@@ -22,10 +22,10 @@ export default function FeedPage() {
 
   const [posts, setPosts] = useState([]);
   const [creators, setCreators] = useState([]);
-  const [filter, setFilter] = useState('all'); // star, all, community, subscribed, video, image
+  const [filter, setFilter] = useState('star'); // Defaults to Nicole's Exclusive Vault
   const [loading, setLoading] = useState(true);
 
-  // Identify featured star creator (primary flagship brand)
+  // Identify featured star creator (Nicole Shayla)
   const starCreator = creators.find(c => c.id === 'creator-1') || creators[0];
 
   // Modals state
@@ -46,7 +46,7 @@ export default function FeedPage() {
     try {
       setLoading(true);
       let url = '/api/posts';
-      if (filter === 'star' && starCreator) {
+      if ((filter === 'star' || filter === 'free' || filter === 'ppv') && starCreator) {
         url += `?creatorId=${starCreator.id}`;
       } else if (filter === 'subscribed') {
         url += '?filter=subscribed';
@@ -60,6 +60,10 @@ export default function FeedPage() {
         let list = data.posts;
         if (filter === 'community' && starCreator) {
           list = list.filter(p => p.creatorId !== starCreator.id);
+        } else if (filter === 'free') {
+          list = list.filter(p => !p.isLocked);
+        } else if (filter === 'ppv') {
+          list = list.filter(p => p.priceToUnlock > 0);
         }
         setPosts(list);
       }
@@ -213,53 +217,64 @@ export default function FeedPage() {
           </div>
         )}
 
-        {/* Featured Star Creator Spotlight Card */}
+        {/* Nicole Shayla Featured VIP Hero Banner */}
         {starCreator && (
-          <div className="bg-gradient-to-r from-[#141926] via-[#172033] to-[#141926] border border-[#26334d] rounded-3xl p-5 shadow-xl relative overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-              <div className="flex items-center gap-3.5 min-w-0">
+          <div className="bg-gradient-to-r from-[#141926] via-[#1a1630] to-[#141926] border border-[#3b2b5c] rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-purple-600/15 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative z-10">
+              <div className="flex items-center gap-4 min-w-0">
                 <Link to={`/creator/${starCreator.username}`} className="relative group flex-shrink-0">
                   <img
                     src={starCreator.avatar}
                     alt={starCreator.name}
-                    className="w-14 h-14 rounded-2xl object-cover border-2 border-[#00aff0] shadow-md group-hover:scale-105 transition-transform"
+                    className="w-20 h-20 rounded-2xl object-cover border-2 border-purple-500 shadow-xl group-hover:scale-105 transition-transform"
                   />
-                  <span className="absolute -bottom-1 -right-1 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-black text-[9px] font-black px-1.5 py-0.2 rounded-full shadow">
-                    STAR
+                  <span className="absolute -bottom-1 -right-1 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow">
+                    ⭐ STAR
                   </span>
                 </Link>
+
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h2 className="text-sm sm:text-base font-extrabold text-white truncate">{starCreator.name}</h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg sm:text-xl font-black text-white">{starCreator.name}</h2>
                     <CheckCircle2 className="w-4 h-4 text-[#00aff0] fill-[#00aff0]/20 flex-shrink-0" />
-                    <span className="text-[10px] font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded-full border border-cyan-800/40">
-                      Featured Star
+                    <span className="text-[10px] font-bold text-purple-300 bg-purple-950/60 px-2.5 py-0.5 rounded-full border border-purple-800/40">
+                      Official VIP Hub
                     </span>
+                    <span className="text-xs text-gray-400">@{starCreator.username}</span>
                   </div>
-                  <p className="text-xs text-gray-300 line-clamp-1 mt-0.5">{starCreator.bio}</p>
-                  <p className="text-[11px] text-gray-400 mt-1">
-                    <span className="text-white font-semibold">{starCreator.subscriberCount?.toLocaleString() || '4,820'}</span> subscribers · <span className="text-cyan-400 font-semibold">${starCreator.monthlyPrice || 14.99}</span>/mo
+
+                  <p className="text-xs text-gray-200 mt-1 line-clamp-2 leading-relaxed">
+                    {starCreator.bio}
                   </p>
+
+                  <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-400 flex-wrap">
+                    <span><strong className="text-white">{starCreator.subscriberCount?.toLocaleString() || '5,240'}</strong> VIP Fans</span>
+                    <span>•</span>
+                    <span><strong className="text-white">24</strong> 4K Tapes</span>
+                    <span>•</span>
+                    <span><strong className="text-cyan-400">${starCreator.monthlyPrice || 14.99}</strong>/month</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0">
                 <button
                   type="button"
-                  onClick={() => setFilter('star')}
-                  className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer ${
-                    filter === 'star'
-                      ? 'bg-[#00aff0] text-black shadow-md shadow-cyan-500/25'
-                      : 'bg-[#1b2336] hover:bg-[#25304a] text-cyan-300 border border-[#2b3956]'
-                  }`}
+                  onClick={() => {
+                    if (!isAuthenticated) return navigate('/signup?redirect=/');
+                    setActiveSubCreator(starCreator);
+                  }}
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#00aff0] via-[#8b5cf6] to-[#ec4899] text-white font-black text-xs rounded-xl shadow-lg shadow-purple-500/25 hover:opacity-95 transition cursor-pointer text-center"
                 >
-                  ⭐ Star Feed
+                  Unlock Nicole's Feed ($14.99/mo)
                 </button>
                 <Link
                   to={`/creator/${starCreator.username}`}
-                  className="px-3.5 py-1.5 bg-[#1b2336] hover:bg-[#25304a] border border-[#2b3956] text-white font-bold text-xs rounded-xl transition"
+                  className="px-4 py-2.5 bg-[#1b2336] hover:bg-[#25304a] border border-[#2b3956] text-white font-bold text-xs rounded-xl transition text-center"
                 >
-                  Channel
+                  Full Profile
                 </Link>
               </div>
             </div>
@@ -269,11 +284,11 @@ export default function FeedPage() {
         {/* Feed Filters Bar */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {[
-            { id: 'star', label: '⭐ Star Channel', icon: Sparkles },
-            { id: 'all', label: '🔥 All Creators', icon: Flame },
-            { id: 'community', label: '🌐 Community', icon: Users },
-            { id: 'video', label: '🎬 HD Videos', icon: Video },
-            { id: 'subscribed', label: '🔒 Subscribed', icon: CheckCircle2 }
+            { id: 'star', label: "⭐ Nicole's Vault", icon: Sparkles },
+            { id: 'free', label: "🎬 Free Teasers", icon: Video },
+            { id: 'ppv', label: "💎 Premium PPV", icon: Lock },
+            { id: 'community', label: "🌐 Guest Creators", icon: Users },
+            { id: 'subscribed', label: "🔒 Subscribed", icon: CheckCircle2 }
           ].map((tab) => {
             const Icon = tab.icon;
             const active = filter === tab.id;
@@ -341,26 +356,24 @@ export default function FeedPage() {
       {/* Right Column / Discover Sidebar */}
       <div className="hidden lg:block space-y-6">
         
-        {/* Featured Creators Card */}
+        {/* Guest Creators Card */}
         <div className="bg-[#131722] border border-[#1f2638] rounded-3xl p-5 shadow-xl">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-extrabold text-sm text-white flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-[#00aff0]" />
-              <span>Trending Creators</span>
+              <Users className="w-4 h-4 text-purple-400" />
+              <span>Guest Creators & Friends</span>
             </h3>
-            <Link to="/explore" className="text-xs text-[#00aff0] hover:underline font-semibold">
-              View all
-            </Link>
+            <span className="text-[11px] text-gray-500 font-semibold">Featured</span>
           </div>
 
           <div className="space-y-3.5">
-            {creators.slice(0, 4).map((c) => (
+            {creators.filter(c => c.id !== starCreator?.id).slice(0, 3).map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-3 p-2 rounded-2xl hover:bg-[#1a2133] transition">
                 <Link to={`/creator/${c.username}`} className="flex items-center gap-2.5 min-w-0">
                   <img
                     src={c.avatar}
                     alt={c.name}
-                    className="w-10 h-10 rounded-full object-cover border border-[#00aff0]/40"
+                    className="w-10 h-10 rounded-full object-cover border border-purple-500/40"
                   />
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-white truncate flex items-center gap-1">
@@ -370,15 +383,12 @@ export default function FeedPage() {
                     <p className="text-[11px] text-gray-400 truncate">{c.category}</p>
                   </div>
                 </Link>
-                <button
-                  onClick={() => {
-                    if (!isAuthenticated) return navigate('/login');
-                    setActiveSubCreator(c);
-                  }}
-                  className="px-3 py-1 bg-[#00aff0]/10 hover:bg-[#00aff0] hover:text-black text-[#00aff0] font-bold text-xs rounded-full border border-[#00aff0]/30 transition cursor-pointer"
+                <Link
+                  to={`/creator/${c.username}`}
+                  className="px-3 py-1 bg-[#1e2538] hover:bg-[#28324a] text-cyan-300 font-bold text-xs rounded-full border border-cyan-800/30 transition text-center"
                 >
-                  Join
-                </button>
+                  View
+                </Link>
               </div>
             ))}
           </div>

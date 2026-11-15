@@ -27,7 +27,7 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
   const [unlocking, setUnlocking] = useState(false);
 
   const requireLoginPrompt = () => {
-    navigate('/login');
+    navigate('/signup?redirect=' + encodeURIComponent(window.location.pathname));
   };
 
   const handleLike = async () => {

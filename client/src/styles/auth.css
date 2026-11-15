@@ -342,6 +342,123 @@
   border-color: #3b4561;
 }
 
+/* OTP Verification Screen */
+.auth-otp-box {
+  background: rgba(0, 175, 240, 0.04);
+  border: 1px solid rgba(0, 175, 240, 0.2);
+  border-radius: var(--auth-radius-md);
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.auth-otp-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 175, 240, 0.12);
+  border: 1px solid rgba(0, 175, 240, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px auto;
+  color: var(--auth-accent-cyan);
+}
+
+.auth-otp-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--auth-text-primary);
+  margin-bottom: 6px;
+}
+
+.auth-otp-subtitle {
+  font-size: 12px;
+  color: var(--auth-text-muted);
+  line-height: 1.5;
+}
+
+.auth-otp-email-highlight {
+  color: var(--auth-accent-cyan);
+  font-weight: 700;
+}
+
+.auth-otp-input-field {
+  width: 100%;
+  background: var(--auth-bg-input);
+  border: 2px solid var(--auth-border);
+  border-radius: var(--auth-radius-md);
+  padding: 14px 16px;
+  color: var(--auth-text-primary);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.35em;
+  text-align: center;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.auth-otp-input-field:focus {
+  outline: none;
+  border-color: var(--auth-border-focus);
+  box-shadow: 0 0 0 3px rgba(0, 175, 240, 0.15);
+}
+
+.auth-otp-demo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 4px 12px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  border-radius: 9999px;
+  color: #c4b5fd;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.auth-otp-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 12px;
+}
+
+.auth-otp-resend-btn {
+  background: transparent;
+  border: none;
+  color: var(--auth-accent-cyan);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+  transition: opacity 0.2s;
+}
+
+.auth-otp-resend-btn:disabled {
+  color: var(--auth-text-dim);
+  cursor: not-allowed;
+}
+
+.auth-otp-back-btn {
+  background: transparent;
+  border: none;
+  color: var(--auth-text-muted);
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s;
+}
+
+.auth-otp-back-btn:hover {
+  color: var(--auth-text-primary);
+}
+
 /* Responsive Rules */
 @media (max-width: 480px) {
   .auth-card {

@@ -19,40 +19,40 @@ export const mockUsers = [
   },
   {
     id: "creator-1",
-    username: "aria_fit",
-    name: "Aria Nova",
-    email: "aria@justfans.io",
+    username: "uni_ques78",
+    name: "Nicole Shayla",
+    email: "nicole@justfans.io",
     role: "creator",
-    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&auto=format&fit=crop&q=80",
-    banner: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&auto=format&fit=crop&q=80",
-    category: "Fitness & Wellness",
-    bio: "Certified Trainer & Pilates Coach 🧘‍♀️ Sharing daily high-intensity workouts, clean meal recipes, and behind-the-scenes life in LA.",
-    subscriberCount: 4820,
-    postCount: 142,
-    likeCount: 94300,
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+    banner: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=1400&auto=format&fit=crop&q=80",
+    category: "Trans & Solo VIP",
+    bio: "FREE OF❗9 INCH COCK & I LOVE TAKING IT TOO 😈 21 y trans girl from the US & anal queen of your dreams 💦i’m horny 24/7 and yeah",
+    subscriberCount: 5240,
+    postCount: 24,
+    likeCount: 112000,
     monthlyPrice: 14.99,
     vipPrice: 29.99,
     verified: true,
     tiers: [
       {
-        id: "tier-aria-std",
+        id: "tier-nicole-std",
         name: "Standard Fan",
         price: 14.99,
         perks: [
-          "Full access to 4K workout video archive",
-          "Weekly live Q&A stream",
+          "Full access to 4K uncensored video vault & feed",
+          "Daily video drops & private feed",
           "Comment & like privileges on all posts"
         ]
       },
       {
-        id: "tier-aria-vip",
+        id: "tier-nicole-vip",
         name: "VIP All-Access",
         price: 29.99,
         perks: [
           "All Standard Fan perks",
-          "Direct priority messaging & form checks",
-          "Monthly customized meal prep PDF guide",
-          "Exclusive raw vlog episodes"
+          "Direct priority 1-on-1 private messaging",
+          "Exclusive custom video requests discount",
+          "Early access to full uncut 4K tapes"
         ]
       }
     ]
@@ -160,42 +160,62 @@ export const mockPosts = [
   {
     id: "post-1",
     creatorId: "creator-1",
-    title: "Full 30-Minute Morning Mobility & Core Blast ⚡",
-    caption: "Start your morning right! This routine targets tight hips and strengthens your lower back. Let me know in the comments how the 3rd circuit felt!",
+    title: "Welcome to My Official VIP Fan Club 💋✨ [Free Intro Trailer]",
+    caption: "Hey loves! Welcome to my private world 💕 Here you get uncensored full-length 4K videos, behind-the-scenes vlogs, and direct 1-on-1 private DMs with me. Subscribe below to unlock my entire vault!",
     mediaType: "video",
     mediaUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    thumbnail: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80",
+    thumbnail: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80",
     isLocked: false,
     requiredTier: "free",
     priceToUnlock: 0,
-    likes: 1284,
-    commentsCount: 96,
-    tipsTotal: 240,
+    likes: 2480,
+    commentsCount: 142,
+    tipsTotal: 380,
     createdAt: "2026-11-05T08:30:00Z",
-    tags: ["Fitness", "Core", "MorningRoutine"],
+    tags: ["Welcome", "FreeTrailer", "NicoleShayla"],
     comments: [
-      { id: "c1", user: "alex_fan", text: "That plank variation was killer! Feeling amazing today 🙌", createdAt: "2026-11-05T09:10:00Z" },
-      { id: "c2", user: "sarah_run", text: "Adding this into my daily stretch, thank you Aria!", createdAt: "2026-11-05T10:00:00Z" }
+      { id: "c1", user: "alex_fan", text: "So excited you launched your official site Nicole! Subscribed immediately 🔥", createdAt: "2026-11-05T09:10:00Z" },
+      { id: "c2", user: "sam_vip", text: "You look stunning queen! Can't wait for tonight's tape 💦", createdAt: "2026-11-05T10:00:00Z" }
     ]
   },
   {
     id: "post-2",
     creatorId: "creator-1",
-    title: "EXCLUSIVE: Secret Leg Day Burner + Gym Vlog [Subscribers Only]",
-    caption: "The exact quad and glute breakdown I've been doing leading up to my photo shoot. Warning: you won't be able to walk tomorrow! 🍑🔥",
+    title: "EXCLUSIVE: Bedroom Solo Session & Tease 💦 [Subscribers Only]",
+    caption: "Unfiltered 4K bedroom tape just dropped for all my active VIP subscribers! Turn up your volume 😈",
     mediaType: "video",
     mediaUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4",
-    thumbnail: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
+    thumbnail: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&auto=format&fit=crop&q=80",
     isLocked: true,
     requiredTier: "Standard Fan",
     priceToUnlock: 4.99,
-    likes: 3102,
-    commentsCount: 215,
-    tipsTotal: 650,
+    likes: 4210,
+    commentsCount: 310,
+    tipsTotal: 890,
     createdAt: "2026-11-04T16:00:00Z",
-    tags: ["SubscribersOnly", "LegDay", "WorkoutRoutine"],
+    tags: ["VIPExclusive", "4KVideo", "BedroomSession"],
     comments: [
-      { id: "c3", user: "fit_mike", text: "Best routine on this platform hands down.", createdAt: "2026-11-04T18:22:00Z" }
+      { id: "c3", user: "fit_mike", text: "Worth every single penny of the subscription. Absolutely insane.", createdAt: "2026-11-04T18:22:00Z" }
+    ]
+  },
+  {
+    id: "post-vault-1",
+    creatorId: "creator-1",
+    title: "PREMIUM VAULT: Full 25-Min Uncut 4K Anal Queen Tape 🔥 [PPV Exclusive]",
+    caption: "My wildest, most requested full-length tape. Raw, intense, and 100% uncut. Unlock to watch immediately!",
+    mediaType: "video",
+    mediaUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+    thumbnail: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop&q=80",
+    isLocked: true,
+    requiredTier: "VIP All-Access",
+    priceToUnlock: 9.99,
+    likes: 5690,
+    commentsCount: 418,
+    tipsTotal: 1450,
+    createdAt: "2026-11-03T12:00:00Z",
+    tags: ["PPVExclusive", "UncutTape", "4KAnalQueen"],
+    comments: [
+      { id: "c4", user: "alex_fan", text: "Best tape on the internet, 10/10 🔥🔥🔥", createdAt: "2026-11-03T13:40:00Z" }
     ]
   },
   {

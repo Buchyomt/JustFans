@@ -39,10 +39,10 @@ export default function Navbar() {
 
   const demoAccounts = [
     { id: 'user-fan-1', name: 'Alex Johnson', role: 'fan', tag: 'VIP Subscriber' },
-    { id: 'creator-1', name: 'Aria Nova', role: 'creator', tag: 'Fitness & Wellness' },
-    { id: 'creator-2', name: 'Marcus Cole', role: 'creator', tag: 'Music & Beats' },
-    { id: 'creator-3', name: 'Elena Rostova', role: 'creator', tag: 'Concept Artist' },
-    { id: 'creator-4', name: 'Kai Vance', role: 'creator', tag: 'Tech & Gaming' }
+    { id: 'creator-1', name: 'Nicole Shayla', role: 'creator', tag: 'Star Creator (@uni_ques78)' },
+    { id: 'creator-2', name: 'Marcus Cole', role: 'creator', tag: 'Guest Creator' },
+    { id: 'creator-3', name: 'Elena Rostova', role: 'creator', tag: 'Guest Creator' },
+    { id: 'creator-4', name: 'Kai Vance', role: 'creator', tag: 'Guest Creator' }
   ];
 
   return (
@@ -77,11 +77,11 @@ export default function Navbar() {
 
           {/* Quick link to Star Creator */}
           <Link
-            to="/creator/aria_fit"
+            to="/creator/uni_ques78"
             className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-950/50 border border-cyan-700/40 text-cyan-300 hover:text-white hover:border-[#00aff0] text-xs font-bold transition flex-shrink-0"
           >
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>⭐ Star Channel</span>
+            <span>⭐ Nicole's VIP Channel</span>
           </Link>
 
           {/* Right actions */}
