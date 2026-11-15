@@ -12,7 +12,6 @@ export const mockUsers = [
     walletBalance: 125.50,
     following: ["creator-1", "creator-2", "creator-3"],
     subscriptions: [
-      { creatorId: "creator-1", tier: "VIP", expiresAt: "2026-12-01", price: 14.99 },
       { creatorId: "creator-2", tier: "Standard", expiresAt: "2026-11-28", price: 9.99 }
     ],
     bookmarks: ["post-1", "post-4"]
@@ -285,28 +284,25 @@ export const mockMessages = [
     fanId: "user-fan-1",
     messages: [
       {
-        id: "m1",
-        senderId: "user-fan-1",
-        text: "Hey Aria! Loved the new workout video. Quick question: how many days a week do you recommend doing that core circuit?",
-        timestamp: "2026-11-05T10:15:00Z",
-        tip: 5.00
-      },
-      {
-        id: "m2",
+        id: "m-welcome-1",
         senderId: "creator-1",
-        text: "Hey Alex! Thank you so much for the tip! 🙏 3 times a week with at least 1 rest day in between is the sweet spot. You're crushing it!",
-        timestamp: "2026-11-05T10:30:00Z",
+        text: "Hey babe! 💕 Welcome to my exclusive VIP chat. If you're looking to subscribe ($60/mo) and unlock my full uncut 4K video vault, message me right here to get my approved CashApp, PayPal, Zelle, or Crypto details! 😈 Let me know what payment method works best for you!",
+        timestamp: "2026-11-15T10:00:00Z",
         tip: 0
       },
       {
-        id: "m3",
+        id: "m-fan-1",
+        senderId: "user-fan-1",
+        text: "Hey Nicole! What payment method can I use to unlock the monthly VIP pass?",
+        timestamp: "2026-11-15T10:15:00Z",
+        tip: 5.00
+      },
+      {
+        id: "m-nicole-1",
         senderId: "creator-1",
-        text: "Here is an early sneak peek of tomorrow's HIIT schedule with the PDF breakdown:",
-        timestamp: "2026-11-05T10:31:00Z",
-        isLockedPPV: true,
-        price: 3.99,
-        unlocked: false,
-        attachmentUrl: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop&q=80"
+        text: "Hey Alex! Thank you so much for the tip! 💕 You can send your $60 directly to my CashApp: $NicoleShaylaVIP or PayPal: paypal.me/nicoleshaylavip. Reply here once sent so I can verify and activate your full vault access! 💋",
+        timestamp: "2026-11-15T10:30:00Z",
+        tip: 0
       }
     ]
   }

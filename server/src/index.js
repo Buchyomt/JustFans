@@ -31,6 +31,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static uploaded video & image files from /uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Also serve public client assets (e.g. FhNtifmVQAEZDgwy.jpg) if fetched from server port
+app.use(express.static(path.join(__dirname, '../../client/public')));
 
 // API Health Check
 app.get('/api/health', (req, res) => {

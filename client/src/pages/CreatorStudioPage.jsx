@@ -38,7 +38,10 @@ export default function CreatorStudioPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState('composer'); // 'composer' or 'videos'
+  const [activeTab, setActiveTab] = useState('composer'); // 'composer', 'videos', or 'subscribers'
+  const [grantUsername, setGrantUsername] = useState('');
+  const [grantMsg, setGrantMsg] = useState('');
+  const [grantLoading, setGrantLoading] = useState(false);
 
   const fetchAnalytics = async () => {
     try {
@@ -61,6 +64,36 @@ export default function CreatorStudioPage() {
       }
     } catch (err) {
       console.error('Failed to load uploaded videos:', err);
+    }
+  };
+
+  const handleGrantAccess = async (e) => {
+    e.preventDefault();
+    if (!grantUsername.trim()) return;
+    setGrantLoading(true);
+    setGrantMsg('');
+    try {
+      const res = await authFetch('/api/subscriptions/grant-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fanId: grantUsername.trim(),
+          creatorId: currentUser?.id || 'creator-1',
+          tierName: 'Standard Fan'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGrantMsg(data.message || 'VIP Access granted successfully!');
+        setGrantUsername('');
+        fetchAnalytics();
+      } else {
+        setGrantMsg(data.message || 'Failed to grant VIP access');
+      }
+    } catch (err) {
+      setGrantMsg('Network error granting VIP access');
+    } finally {
+      setGrantLoading(false);
     }
   };
 
@@ -341,7 +374,20 @@ export default function CreatorStudioPage() {
                 }`}
               >
                 <Film className="w-3.5 h-3.5" />
-                <span>Video Storage Catalog ({uploadedVideos.length})</span>
+                <span>Video Catalog ({uploadedVideos.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('subscribers')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'subscribers' 
+                    ? 'bg-[#00aff0] text-black shadow-md shadow-cyan-500/20' 
+                    : 'text-gray-400 hover:text-white bg-[#1a2133]'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>VIP Access & Codes</span>
               </button>
             </div>
           </div>
@@ -586,6 +632,83 @@ export default function CreatorStudioPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'subscribers' && (
+            <div className="space-y-6">
+              {/* Grant VIP Access Tool */}
+              <div className="bg-[#181e2c] border border-[#2b354e] rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-black text-white flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-[#00aff0]" />
+                      <span>Manually Grant VIP Subscription to Fan</span>
+                    </h4>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      When a fan pays you via CashApp, PayPal, or Zelle, enter their username here to unlock Nicole's vault for them.
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleGrantAccess} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter fan username or ID (e.g. alex_fan)"
+                    value={grantUsername}
+                    onChange={(e) => setGrantUsername(e.target.value)}
+                    className="flex-1 bg-[#131722] border border-[#273148] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#00aff0]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={grantLoading || !grantUsername.trim()}
+                    className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 disabled:opacity-40 text-black font-black text-xs rounded-xl shadow-md transition cursor-pointer flex items-center justify-center gap-1.5 flex-shrink-0"
+                  >
+                    <span>{grantLoading ? "Granting..." : "Activate VIP Access"}</span>
+                  </button>
+                </form>
+
+                {grantMsg && (
+                  <div className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                    grantMsg.includes('success') 
+                      ? 'bg-emerald-950/50 border border-emerald-500/40 text-emerald-300' 
+                      : 'bg-rose-950/50 border border-rose-900/40 text-rose-300'
+                  }`}>
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                    <span>{grantMsg}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* VIP Activation Promo Codes Nicole Can Share in Chat */}
+              <div className="bg-[#181e2c] border border-[#2b354e] rounded-2xl p-5 shadow-sm space-y-3">
+                <h4 className="text-sm font-black text-white flex items-center gap-1.5">
+                  <Film className="w-4 h-4 text-purple-400" />
+                  <span>VIP Activation Codes for Direct Payers</span>
+                </h4>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Send any of these codes to your fans in direct messages once they confirm payment of $60 or $99:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className="p-3 bg-[#131722] border border-[#273148] rounded-xl">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-mono font-bold text-sm text-[#00aff0]">VIP60</span>
+                      <span className="text-[10px] text-gray-400 font-bold">$60.00 Standard</span>
+                    </div>
+                    <p className="text-[11px] text-gray-400">Grants 30 days of full access to all 4K tapes & feed</p>
+                  </div>
+
+                  <div className="p-3 bg-[#131722] border border-[#273148] rounded-xl">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-mono font-bold text-sm text-purple-400">VIP99</span>
+                      <span className="text-[10px] text-gray-400 font-bold">$99.00 VIP All-Access</span>
+                    </div>
+                    <p className="text-[11px] text-gray-400">Grants 30 days All-Access + priority direct messaging</p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

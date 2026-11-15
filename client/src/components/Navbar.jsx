@@ -38,7 +38,7 @@ export default function Navbar() {
   };
 
   const demoAccounts = [
-    { id: 'user-fan-1', name: 'Alex Johnson', role: 'fan', tag: 'VIP Subscriber' },
+    { id: 'user-fan-1', name: 'Alex Johnson', role: 'fan', tag: 'Demo Fan' },
     { id: 'creator-1', name: 'Nicole Shayla', role: 'creator', tag: 'Star Creator (@uni_ques78)' },
     { id: 'creator-2', name: 'Marcus Cole', role: 'creator', tag: 'Guest Creator' },
     { id: 'creator-3', name: 'Elena Rostova', role: 'creator', tag: 'Guest Creator' },

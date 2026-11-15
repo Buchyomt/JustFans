@@ -8,12 +8,41 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
   const currentUser = req.user;
 
+  // If user is a fan, guarantee they always have a conversation with Nicole Shayla (creator-1)
+  if (currentUser.role === 'fan') {
+    let nicoleThread = mockMessages.find(t => 
+      (t.creatorId === 'creator-1' && t.fanId === currentUser.id) ||
+      (t.creatorId === currentUser.id && t.fanId === 'creator-1')
+    );
+
+    if (!nicoleThread) {
+      nicoleThread = {
+        id: `thread-nicole-${currentUser.id}`,
+        creatorId: 'creator-1',
+        fanId: currentUser.id,
+        messages: [
+          {
+            id: `m-welcome-${currentUser.id}`,
+            senderId: 'creator-1',
+            text: "Hey babe! 💕 Welcome to my exclusive VIP chat. If you're looking to subscribe ($60/mo) and unlock my full uncut 4K video vault, message me right here to get my approved CashApp, PayPal, Zelle, or Crypto details! 😈 Let me know what payment method works best for you!",
+            timestamp: new Date().toISOString(),
+            tip: 0
+          }
+        ]
+      };
+      mockMessages.unshift(nicoleThread);
+    }
+  }
+
   const userThreads = mockMessages.filter(t => 
     t.fanId === currentUser.id || t.creatorId === currentUser.id
   ).map(thread => {
     const isFan = currentUser.id === thread.fanId;
     const partnerId = isFan ? thread.creatorId : thread.fanId;
-    const partner = mockUsers.find(u => u.id === partnerId);
+    let partner = mockUsers.find(u => u.id === partnerId);
+    if (!partner && partnerId === 'creator-1') {
+      partner = mockUsers.find(u => u.id === 'creator-1');
+    }
     const lastMsg = thread.messages[thread.messages.length - 1];
 
     return {
@@ -24,10 +53,17 @@ router.get('/', requireAuth, (req, res) => {
         id: partner.id,
         name: partner.name,
         username: partner.username,
-        avatar: partner.avatar,
+        avatar: partner.avatar || (partner.id === 'creator-1' ? '/FhNtifmVQAEZDgwy.jpg' : ''),
         role: partner.role,
         verified: partner.verified
-      } : null,
+      } : {
+        id: partnerId,
+        name: partnerId === 'creator-1' ? 'Nicole Shayla' : 'Creator',
+        username: partnerId === 'creator-1' ? 'uni_ques78' : 'creator',
+        avatar: '/FhNtifmVQAEZDgwy.jpg',
+        role: 'creator',
+        verified: true
+      },
       lastMessage: lastMsg?.text || "No messages yet",
       lastTimestamp: lastMsg?.timestamp || null,
       messages: thread.messages
@@ -48,12 +84,22 @@ router.post('/:threadId', requireAuth, (req, res) => {
 
   let thread = mockMessages.find(t => t.id === threadId);
   if (!thread) {
-    const creator = mockUsers.find(u => u.id === threadId || u.username === threadId);
-    if (creator) {
+    // Check if threadId refers to creatorId or fan partner
+    thread = mockMessages.find(t => 
+      (t.creatorId === threadId && t.fanId === currentUser.id) ||
+      (t.fanId === threadId && t.creatorId === currentUser.id)
+    );
+  }
+  if (!thread) {
+    const partner = mockUsers.find(u => u.id === threadId || u.username === threadId) || 
+      (threadId === 'creator-1' || threadId === 'uni_ques78' ? mockUsers.find(u => u.id === 'creator-1') : null);
+
+    if (partner) {
+      const isPartnerCreator = partner.role === 'creator';
       thread = {
         id: `thread-${Date.now()}`,
-        creatorId: creator.id,
-        fanId: currentUser.id,
+        creatorId: isPartnerCreator ? partner.id : currentUser.id,
+        fanId: isPartnerCreator ? currentUser.id : partner.id,
         messages: []
       };
       mockMessages.push(thread);
@@ -86,9 +132,42 @@ router.post('/:threadId', requireAuth, (req, res) => {
 
   thread.messages.push(newMsg);
 
+  // If fan is messaging Nicole Shayla (creator-1), provide real-time payment assistance auto-replies
+  let autoReply = null;
+  if (currentUser.role === 'fan' && thread.creatorId === 'creator-1') {
+    const lower = (text || '').toLowerCase();
+    if (lower.includes('paid') || lower.includes('sent') || lower.includes('notification') || lower.includes('proof')) {
+      autoReply = {
+        id: `m-nicole-${Date.now() + 1}`,
+        senderId: 'creator-1',
+        text: "Got your payment notice babe! 🥰 I'm verifying the transaction on my end right now. Once verified, you can enter VIP Activation Code: VIP60 in the subscribe popup or I will activate your vault access directly! 💦",
+        timestamp: new Date(Date.now() + 1200).toISOString(),
+        tip: 0
+      };
+    } else if (
+      lower.includes('pay') || lower.includes('cashapp') || lower.includes('cash app') ||
+      lower.includes('paypal') || lower.includes('zelle') || lower.includes('crypto') || 
+      lower.includes('subscribe') || lower.includes('method') || lower.includes('how') || 
+      lower.includes('cost') || lower.includes('price') || lower.includes('access')
+    ) {
+      autoReply = {
+        id: `m-nicole-${Date.now() + 1}`,
+        senderId: 'creator-1',
+        text: "Hey love! 😈 Here are my approved direct payment methods for full VIP vault access ($60.00/mo):\n\n💸 CashApp: $NicoleShaylaVIP\n💳 PayPal: paypal.me/nicoleshaylavip\n📱 Zelle: payments@nicoleshayla.com\n⚡ Crypto (USDT-TRC20 / BTC): DM for wallet\n\nSend your $60 and reply here with your name/handle once done so I can activate your VIP Access! 💕",
+        timestamp: new Date(Date.now() + 1200).toISOString(),
+        tip: 0
+      };
+    }
+
+    if (autoReply) {
+      thread.messages.push(autoReply);
+    }
+  }
+
   res.status(201).json({
     success: true,
     message: newMsg,
+    autoReply,
     threadId: thread.id,
     newBalance: currentUser.walletBalance
   });

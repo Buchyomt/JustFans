@@ -271,8 +271,15 @@ export default function FeedPage() {
                   Unlock Nicole's Feed (${(starCreator.monthlyPrice || 60).toFixed(2)}/mo)
                 </button>
                 <Link
+                  to={isAuthenticated ? `/messages?creator=${starCreator.id}&inquiry=subscribe` : '/signup?redirect=/messages'}
+                  className="px-4 py-2.5 bg-[#1b2336] hover:bg-[#25304a] border border-[#2b3956] text-white font-bold text-xs rounded-xl transition text-center flex items-center justify-center gap-1.5"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-[#00aff0]" />
+                  <span>Message Nicole</span>
+                </Link>
+                <Link
                   to={`/creator/${starCreator.username}`}
-                  className="px-4 py-2.5 bg-[#1b2336] hover:bg-[#25304a] border border-[#2b3956] text-white font-bold text-xs rounded-xl transition text-center"
+                  className="px-4 py-2.5 bg-[#1b2336] hover:bg-[#25304a] border border-[#2b3956] text-gray-300 hover:text-white font-bold text-xs rounded-xl transition text-center"
                 >
                   Full Profile
                 </Link>
