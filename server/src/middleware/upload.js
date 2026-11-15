@@ -104,3 +104,28 @@ export const handleVideoUpload = (fieldName = 'video') => {
   };
 };
 
+// Avatar uploads directory: server/uploads/avatars
+export const AVATAR_DIR = path.resolve(__dirname, '../../uploads/avatars');
+if (!fs.existsSync(AVATAR_DIR)) {
+  fs.mkdirSync(AVATAR_DIR, { recursive: true });
+}
+
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    if (!fs.existsSync(AVATAR_DIR)) {
+      fs.mkdirSync(AVATAR_DIR, { recursive: true });
+    }
+    cb(null, AVATAR_DIR);
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    cb(null, `avatar-${timestamp}-${Math.round(Math.random() * 1e6)}${ext}`);
+  }
+});
+
+export const uploadAvatarMiddleware = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+}).single('avatar');
+

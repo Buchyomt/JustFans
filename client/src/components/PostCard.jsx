@@ -18,13 +18,21 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
   const navigate = useNavigate();
 
   const [likes, setLikes] = useState(post.likes || 0);
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState(Boolean(post.isLiked));
   const [isBookmarked, setIsBookmarked] = useState(Boolean(post.isBookmarked));
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState(post.comments || []);
   const [commentText, setCommentText] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(post.hasAccess);
   const [unlocking, setUnlocking] = useState(false);
+
+  // Sync state if post prop updates
+  React.useEffect(() => {
+    setLikes(post.likes || 0);
+    setIsLiked(Boolean(post.isLiked));
+    setIsUnlocked(post.hasAccess);
+    setIsBookmarked(Boolean(post.isBookmarked));
+  }, [post.likes, post.isLiked, post.hasAccess, post.isBookmarked]);
 
   const requireLoginPrompt = () => {
     navigate('/signup?redirect=' + encodeURIComponent(window.location.pathname));
@@ -37,7 +45,7 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
       const data = await res.json();
       if (data.success) {
         setLikes(data.likes);
-        setIsLiked(true);
+        setIsLiked(data.isLiked);
       }
     } catch (err) {
       console.error('Like failed:', err);

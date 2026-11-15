@@ -1,6 +1,7 @@
 import express from 'express';
 import { mockUsers, mockPosts } from '../data/mockData.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
+import { uploadAvatarMiddleware } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -78,6 +79,35 @@ router.post('/:id/follow', requireAuth, (req, res) => {
     followingCount: currentUser.following.length,
     message: isFollowing ? "Creator followed!" : "Creator unfollowed."
   });
+});
+
+// POST /api/creators/avatar (PROTECTED - Upload image file or set URL)
+router.post('/avatar', requireAuth, uploadAvatarMiddleware, (req, res) => {
+  try {
+    let avatarUrl = '';
+    if (req.file) {
+      avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    } else if (req.body.avatarUrl && req.body.avatarUrl.trim()) {
+      avatarUrl = req.body.avatarUrl.trim();
+    } else {
+      return res.status(400).json({ success: false, message: 'Please select an image file or provide an avatarUrl.' });
+    }
+
+    req.user.avatar = avatarUrl;
+    const creator = mockUsers.find(u => u.id === req.user.id);
+    if (creator) {
+      creator.avatar = avatarUrl;
+    }
+
+    return res.json({
+      success: true,
+      message: 'Profile picture updated successfully!',
+      avatar: avatarUrl
+    });
+  } catch (err) {
+    console.error('[Avatar Update Error]:', err);
+    return res.status(500).json({ success: false, message: 'Failed to update avatar image.' });
+  }
 });
 
 export default router;

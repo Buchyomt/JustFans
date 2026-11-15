@@ -254,7 +254,7 @@ export default function FeedPage() {
                     <span>•</span>
                     <span><strong className="text-white">24</strong> 4K Tapes</span>
                     <span>•</span>
-                    <span><strong className="text-cyan-400">${starCreator.monthlyPrice || 14.99}</strong>/month</span>
+                    <span><strong className="text-cyan-400">${(starCreator.monthlyPrice || 60).toFixed(2)}</strong>/month</span>
                   </div>
                 </div>
               </div>
@@ -268,7 +268,7 @@ export default function FeedPage() {
                   }}
                   className="px-5 py-2.5 bg-gradient-to-r from-[#00aff0] via-[#8b5cf6] to-[#ec4899] text-white font-black text-xs rounded-xl shadow-lg shadow-purple-500/25 hover:opacity-95 transition cursor-pointer text-center"
                 >
-                  Unlock Nicole's Feed ($14.99/mo)
+                  Unlock Nicole's Feed (${(starCreator.monthlyPrice || 60).toFixed(2)}/mo)
                 </button>
                 <Link
                   to={`/creator/${starCreator.username}`}

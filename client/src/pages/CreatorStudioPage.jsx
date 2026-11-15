@@ -14,11 +14,12 @@ import {
   Video as VideoIcon,
   X,
   Play,
-  Trash2
+  Trash2,
+  Camera
 } from 'lucide-react';
 
 export default function CreatorStudioPage() {
-  const { currentUser, authFetch, switchDemo } = useAuth();
+  const { currentUser, authFetch, switchDemo, refreshUser } = useAuth();
   const [analytics, setAnalytics] = useState(null);
   const [uploadedVideos, setUploadedVideos] = useState([]);
   const [previewVideo, setPreviewVideo] = useState(null);
@@ -29,7 +30,7 @@ export default function CreatorStudioPage() {
   const [mediaUrl, setMediaUrl] = useState('');
   const [mediaType, setMediaType] = useState('video');
   const [isLocked, setIsLocked] = useState(true);
-  const [price, setPrice] = useState('4.99');
+  const [price, setPrice] = useState('18.66');
   
   // Real video file upload state
   const [selectedVideoFile, setSelectedVideoFile] = useState(null);
@@ -80,6 +81,29 @@ export default function CreatorStudioPage() {
     } catch (err) {
       console.error('Delete error:', err);
       alert('Failed to delete video.');
+    }
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('avatar', file);
+    try {
+      const res = await authFetch('/api/creators/avatar', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Profile picture updated successfully!');
+        fetchAnalytics();
+        if (refreshUser) refreshUser();
+      } else {
+        alert(data.message || 'Failed to update avatar');
+      }
+    } catch (err) {
+      console.error('Avatar upload error:', err);
     }
   };
 
@@ -181,11 +205,23 @@ export default function CreatorStudioPage() {
       {/* Studio Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#131722] border border-[#1f2638] rounded-3xl p-6 shadow-xl">
         <div className="flex items-center gap-4">
-          <img
-            src={analytics?.creator?.avatar || currentUser?.avatar}
-            alt="Creator"
-            className="w-16 h-16 rounded-2xl object-cover border-2 border-[#8b5cf6]"
-          />
+          <div className="relative group cursor-pointer" title="Click to upload profile photo">
+            <img
+              src={analytics?.creator?.avatar || currentUser?.avatar}
+              alt="Creator"
+              className="w-16 h-16 rounded-2xl object-cover border-2 border-purple-500 group-hover:opacity-75 transition"
+            />
+            <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 transition cursor-pointer">
+              <Camera className="w-5 h-5 text-white" />
+              <span className="text-[9px] text-white font-bold mt-0.5">Edit</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+            </label>
+          </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-black text-white">Creator Studio & Video Storage</h1>
@@ -204,7 +240,7 @@ export default function CreatorStudioPage() {
             onClick={() => switchDemo('creator-1')}
             className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition cursor-pointer"
           >
-            Switch to Aria Nova (Creator View)
+            Switch to Nicole Shayla (Creator View)
           </button>
         )}
       </div>
@@ -451,7 +487,11 @@ export default function CreatorStudioPage() {
                         <Lock className="w-3.5 h-3.5 text-[#00aff0]" />
                         <span>Monetize Content (Subscriber-Only & PPV)</span>
                       </p>
-                      <p className="text-[11px] text-gray-400">Lock this video so non-subscribers must pay to view</p>
+                      <p className="text-[11px] text-gray-400">
+                        {isLocked 
+                          ? `🔒 Checked: Locked behind Paywall ($${price} PPV or active subscriber)` 
+                          : "🔓 Unchecked: 100% FREE Video (Everyone can watch without paying!)"}
+                      </p>
                     </div>
                     <input
                       type="checkbox"
@@ -463,7 +503,7 @@ export default function CreatorStudioPage() {
 
                   {isLocked && (
                     <div className="pt-2 border-t border-[#262c3d] flex items-center gap-3">
-                      <span className="text-xs text-gray-300">Individual Pay-Per-View Price:</span>
+                      <span className="text-xs text-gray-300">Custom PPV / Unlock Price:</span>
                       <div className="relative w-32">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
                         <input

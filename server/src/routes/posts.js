@@ -15,6 +15,7 @@ const enrichPost = (post, currentUser) => {
   const isCreatorSelf = currentUser?.id === post.creatorId;
   const isPurchased = currentUser ? post.unlockedUsers?.includes(currentUser.id) : false;
   const isBookmarked = currentUser?.bookmarks?.includes(post.id);
+  const isLiked = currentUser ? (post.likedUsers?.includes(currentUser.id) || false) : false;
 
   // Content is accessible if it's free, viewer is subscribed, viewer bought PPV, or viewer is author
   const hasAccess = !post.isLocked || isSubscribed || isPurchased || isCreatorSelf;
@@ -24,6 +25,7 @@ const enrichPost = (post, currentUser) => {
     hasAccess,
     isSubscribed: Boolean(isSubscribed),
     isBookmarked: Boolean(isBookmarked),
+    isLiked: Boolean(isLiked),
     creator: creator ? {
       id: creator.id,
       name: creator.name,
@@ -127,22 +129,41 @@ router.post('/', requireAuth, (req, res) => {
   });
 });
 
-// POST /api/posts/:id/like (PROTECTED)
+// POST /api/posts/:id/like (PROTECTED - Toggle Like / Unlike)
 router.post('/:id/like', requireAuth, (req, res) => {
   const post = mockPosts.find(p => p.id === req.params.id);
   if (!post) {
     return res.status(404).json({ success: false, message: "Post not found." });
   }
 
-  post.likes = (post.likes || 0) + 1;
+  if (!post.likedUsers) post.likedUsers = [];
+  const userId = req.user.id;
+  const userIndex = post.likedUsers.indexOf(userId);
   const creator = mockUsers.find(u => u.id === post.creatorId);
-  if (creator) {
-    creator.likeCount = (creator.likeCount || 0) + 1;
+
+  let isLiked = false;
+  if (userIndex > -1) {
+    // Already liked -> Toggle Unlike!
+    post.likedUsers.splice(userIndex, 1);
+    post.likes = Math.max(0, (post.likes || 1) - 1);
+    if (creator && creator.likeCount && creator.likeCount > 0) {
+      creator.likeCount -= 1;
+    }
+    isLiked = false;
+  } else {
+    // Not liked yet -> Toggle Like!
+    post.likedUsers.push(userId);
+    post.likes = (post.likes || 0) + 1;
+    if (creator) {
+      creator.likeCount = (creator.likeCount || 0) + 1;
+    }
+    isLiked = true;
   }
 
   res.json({
     success: true,
-    likes: post.likes
+    likes: post.likes,
+    isLiked
   });
 });
 
