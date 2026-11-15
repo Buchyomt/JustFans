@@ -13,7 +13,8 @@ import {
   PlusCircle, 
   TrendingUp, 
   Flame, 
-  CheckCircle2
+  CheckCircle2,
+  MessageSquare
 } from 'lucide-react';
 
 export default function FeedPage() {

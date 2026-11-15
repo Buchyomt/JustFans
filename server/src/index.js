@@ -13,10 +13,12 @@ import messagesRoutes from './routes/messages.js';
 import analyticsRoutes from './routes/analytics.js';
 import videosRoutes from './routes/videos.js';
 
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load .env from both server/.env and root/.env
+dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
