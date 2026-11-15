@@ -32,7 +32,6 @@ export default function AuthPage({ initialMode = 'login' }) {
   // OTP Verification states
   const [signupStep, setSignupStep] = useState('details'); // 'details' or 'otp'
   const [otpCode, setOtpCode] = useState('');
-  const [devOtpHint, setDevOtpHint] = useState('');
   const [resendCountdown, setResendCountdown] = useState(0);
 
   const [error, setError] = useState('');
@@ -91,7 +90,6 @@ export default function AuthPage({ initialMode = 'login' }) {
         });
 
         if (res.success) {
-          setDevOtpHint(res.devCode || '');
           setSignupStep('otp');
           setResendCountdown(60);
         } else {
@@ -125,7 +123,6 @@ export default function AuthPage({ initialMode = 'login' }) {
     try {
       const res = await resendSignupCode(email.trim());
       if (res.success) {
-        if (res.devCode) setDevOtpHint(res.devCode);
         setResendCountdown(60);
       } else {
         setError(res.message || 'Failed to resend code.');
@@ -318,17 +315,8 @@ export default function AuthPage({ initialMode = 'login' }) {
 
               <h3 className="auth-otp-title">Enter Verification Code</h3>
               <p className="auth-otp-subtitle">
-                We sent a 6-digit confirmation code to <span className="auth-otp-email-highlight">{email}</span>.
+                We sent a 6-digit confirmation code to <span className="auth-otp-email-highlight">{email}</span>. Please check your inbox (and spam folder) and enter it below.
               </p>
-
-              {devOtpHint && (
-                <div style={{ marginTop: 10, marginBottom: 12 }}>
-                  <span className="auth-otp-demo-badge">
-                    <Sparkles style={{ width: 12, height: 12 }} />
-                    <span>Your Verification Code: <strong>{devOtpHint}</strong></span>
-                  </span>
-                </div>
-              )}
 
               <div style={{ margin: '18px 0' }}>
                 <input

@@ -23,7 +23,7 @@ export const mockUsers = [
     name: "Nicole Shayla",
     email: "nicole@justfans.io",
     role: "creator",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+    avatar: "/FhNtifmVQAEZDgwy.jpg",
     banner: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=1400&auto=format&fit=crop&q=80",
     category: "Trans & Solo VIP",
     bio: "FREE OF❗9 INCH COCK & I LOVE TAKING IT TOO 😈 23 y trans girl from the US & anal queen of your dreams 💦i’m horny 24/7 and yeah",

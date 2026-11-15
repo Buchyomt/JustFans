@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
+import { sendVerificationEmail } from '../utils/mailer.js';
 
 const router = express.Router();
 
@@ -81,18 +82,17 @@ router.post('/signup/request-code', async (req, res) => {
       expiresAt: Date.now() + 10 * 60 * 1000
     });
 
-    // Log verification code clearly for development & verification audit
-    console.log(`\n========================================`);
-    console.log(`📧 [EMAIL VERIFICATION CODE] for: ${cleanEmail}`);
-    console.log(`👉 CODE: ${code} (Role: ${role || 'fan'})`);
-    console.log(`⏱️  Expires in 10 minutes`);
-    console.log(`========================================\n`);
+    // Dispatch real email via nodemailer transporter
+    await sendVerificationEmail({
+      to: cleanEmail,
+      code,
+      username: username.trim()
+    });
 
     return res.status(200).json({
       success: true,
-      message: `A 6-digit verification code has been dispatched to ${cleanEmail}.`,
-      email: cleanEmail,
-      devCode: code
+      message: `A 6-digit verification code has been dispatched to ${cleanEmail}. Please check your email inbox.`,
+      email: cleanEmail
     });
   } catch (err) {
     console.error('[Request Code Error]:', err);
@@ -164,7 +164,7 @@ router.post('/signup/verify-code', async (req, res) => {
 });
 
 // POST /api/auth/signup/resend-code - Resend a fresh 6-digit OTP
-router.post('/signup/resend-code', (req, res) => {
+router.post('/signup/resend-code', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -186,15 +186,15 @@ router.post('/signup/resend-code', (req, res) => {
     pending.code = newCode;
     pending.expiresAt = Date.now() + 10 * 60 * 1000;
 
-    console.log(`\n========================================`);
-    console.log(`🔄 [RESENT VERIFICATION CODE] for: ${cleanEmail}`);
-    console.log(`👉 CODE: ${newCode}`);
-    console.log(`========================================\n`);
+    await sendVerificationEmail({
+      to: cleanEmail,
+      code: newCode,
+      username: pending.userData?.username || 'there'
+    });
 
     return res.json({
       success: true,
-      message: `A new 6-digit verification code was sent to ${cleanEmail}.`,
-      devCode: newCode
+      message: `A new 6-digit verification code was sent to ${cleanEmail}. Please check your email inbox.`
     });
   } catch (err) {
     console.error('[Resend Code Error]:', err);
