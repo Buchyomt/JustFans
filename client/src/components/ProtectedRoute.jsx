@@ -43,7 +43,7 @@ export default function ProtectedRoute({ children, requireCreator = false }) {
               className="w-full py-3 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-white font-extrabold text-xs rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-95 transition flex items-center justify-center gap-2 cursor-pointer"
             >
               <Sparkles className="w-4 h-4 fill-white" />
-              <span>Switch to Demo Creator (Aria Nova)</span>
+              <span>Switch to Demo Creator (Nicole Shayla)</span>
             </button>
           </div>
         </div>

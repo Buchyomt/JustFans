@@ -340,4 +340,63 @@ router.post('/switch-demo', (req, res) => {
   });
 });
 
+// POST /api/auth/google - Authenticate or register with Google profile
+router.post('/google', async (req, res) => {
+  try {
+    const { email, name, picture, role = 'fan' } = req.body;
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google authentication failed: Email is required.'
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    let user = User.findByEmail(cleanEmail);
+
+    if (user) {
+      // Existing user logging in with Google
+      const token = generateToken(user);
+      return res.json({
+        success: true,
+        message: `Welcome back, ${user.name}!`,
+        token,
+        user: User.toSafeUser(user)
+      });
+    }
+
+    // New user signing up with Google
+    let username = cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '');
+    if (User.findByUsername(username)) {
+      username = `${username}_${Math.floor(100 + Math.random() * 900)}`;
+    }
+
+    const newUser = await User.create({
+      username,
+      email: cleanEmail,
+      password: `google_oauth_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      role: role || 'fan',
+      name: name || username,
+      avatar: picture || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(username)}`,
+      bio: role === 'creator' ? 'New JustFans Creator!' : 'Supporter & fan.'
+    });
+
+    const token = generateToken(newUser);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Account created with Google successfully!',
+      token,
+      user: User.toSafeUser(newUser)
+    });
+  } catch (err) {
+    console.error('[Google Auth Error]:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error processing Google authentication.'
+    });
+  }
+});
+
 export default router;

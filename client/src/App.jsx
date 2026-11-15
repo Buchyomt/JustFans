@@ -12,6 +12,7 @@ import MessagesPage from './pages/MessagesPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import BookmarksPage from './pages/BookmarksPage';
 import AuthPage from './pages/AuthPage';
+import Footer from './components/Footer';
 
 export default function App() {
   return (
@@ -74,6 +75,9 @@ export default function App() {
               </Routes>
             </main>
           </div>
+
+          {/* Global Trust & Legal Footer */}
+          <Footer />
         </div>
       </Router>
     </AuthProvider>

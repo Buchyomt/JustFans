@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import authRoutes from './routes/auth.js';
@@ -34,11 +35,18 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Also serve public client assets (e.g. FhNtifmVQAEZDgwy.jpg) if fetched from server port
 app.use(express.static(path.join(__dirname, '../../client/public')));
 
+// Serve production built client if present
+const clientDistPath = path.join(__dirname, '../../client/dist');
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+}
+
 // API Health Check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     app: 'JustFans Server',
+    database: 'In-Memory / File-Storage (MongoDB not required)',
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
@@ -53,7 +61,17 @@ app.use('/api/messages', messagesRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/videos', videosRoutes);
 
-// 404 Route handler
+// SPA Client Routing fallback (serves index.html for browser routes if client is built)
+if (fs.existsSync(clientDistPath)) {
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
+
+// 404 Route handler for API endpoints
 app.use((req, res) => {
   res.status(404).json({
     success: false,

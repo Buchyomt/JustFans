@@ -173,6 +173,27 @@ export const AuthProvider = ({ children }) => {
     return false;
   };
 
+  // Google One-Click Auth / Registration
+  const loginWithGoogle = async (googleUser) => {
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(googleUser)
+      });
+      const data = await res.json();
+      if (data.success && data.token) {
+        localStorage.setItem(TOKEN_KEY, data.token);
+        setToken(data.token);
+        setCurrentUser(data.user);
+        return { success: true, user: data.user, message: data.message };
+      }
+      return { success: false, message: data.message || 'Google authentication failed' };
+    } catch {
+      return { success: false, message: 'Network connection failed during Google sign in' };
+    }
+  };
+
   const updateBalance = (newBalance) => {
     setCurrentUser(prev => prev ? { ...prev, walletBalance: newBalance } : prev);
   };
@@ -188,6 +209,7 @@ export const AuthProvider = ({ children }) => {
       requestSignupCode,
       verifySignupCode,
       resendSignupCode,
+      loginWithGoogle,
       logout,
       authFetch,
       refreshUser: fetchCurrentUser,

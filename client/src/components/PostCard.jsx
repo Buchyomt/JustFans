@@ -10,7 +10,9 @@ import {
   CheckCircle2, 
   Send, 
   Sparkles,
-  Trash2
+  Trash2,
+  Share2,
+  Check
 } from 'lucide-react';
 
 export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
@@ -25,6 +27,14 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
   const [commentText, setCommentText] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(post.hasAccess);
   const [unlocking, setUnlocking] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
+
+  const handleShare = () => {
+    const postUrl = `${window.location.origin}/creator/${post.creator?.username || 'uni_ques78'}`;
+    navigator.clipboard?.writeText(postUrl);
+    setCopiedShare(true);
+    setTimeout(() => setCopiedShare(false), 2000);
+  };
 
   // Sync state if post prop updates
   React.useEffect(() => {
@@ -311,15 +321,37 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
             </button>
           </div>
 
-          {/* Bookmark */}
-          <button
-            onClick={handleBookmark}
-            className={`p-2 rounded-full transition cursor-pointer ${
-              isBookmarked ? 'text-[#00aff0] bg-[#00aff0]/15' : 'text-gray-400 hover:text-white hover:bg-[#1a2133]'
-            }`}
-          >
-            <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-[#00aff0]' : ''}`} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {/* Share */}
+            <button
+              onClick={handleShare}
+              title="Copy share link"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold text-gray-400 hover:text-white hover:bg-[#1a2133] transition cursor-pointer"
+            >
+              {copiedShare ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+                  <span className="text-[11px] text-emerald-400 font-bold">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-4 h-4" />
+                  <span className="hidden sm:inline text-[11px]">Share</span>
+                </>
+              )}
+            </button>
+
+            {/* Bookmark */}
+            <button
+              onClick={handleBookmark}
+              title="Bookmark post"
+              className={`p-2 rounded-full transition cursor-pointer ${
+                isBookmarked ? 'text-[#00aff0] bg-[#00aff0]/15' : 'text-gray-400 hover:text-white hover:bg-[#1a2133]'
+              }`}
+            >
+              <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-[#00aff0]' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {/* Comments Section */}

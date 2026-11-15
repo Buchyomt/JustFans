@@ -9,7 +9,10 @@ import {
   AlertCircle, 
   Sparkles,
   KeyRound,
-  ArrowLeft
+  ArrowLeft,
+  ShieldCheck,
+  CheckCircle2,
+  X
 } from 'lucide-react';
 
 export default function AuthPage({ initialMode = 'login' }) {
@@ -18,7 +21,7 @@ export default function AuthPage({ initialMode = 'login' }) {
   const queryMode = searchParams.get('mode');
 
   const [mode, setMode] = useState(queryMode || initialMode);
-  const { login, signup, requestSignupCode, verifySignupCode, resendSignupCode, switchDemo } = useAuth();
+  const { login, signup, requestSignupCode, verifySignupCode, resendSignupCode, switchDemo, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   // Form states
@@ -33,6 +36,12 @@ export default function AuthPage({ initialMode = 'login' }) {
   const [signupStep, setSignupStep] = useState('details'); // 'details' or 'otp'
   const [otpCode, setOtpCode] = useState('');
   const [resendCountdown, setResendCountdown] = useState(0);
+
+  // Google Modal states
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState('');
+  const [googleName, setGoogleName] = useState('');
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -132,21 +141,66 @@ export default function AuthPage({ initialMode = 'login' }) {
     }
   };
 
-  const fillDemoAccount = async (id) => {
-    const success = await switchDemo(id);
-    if (success) {
-      navigate(redirectPath);
+  const handleGoogleAuthSelect = async (account) => {
+    setGoogleSubmitting(true);
+    setError('');
+    try {
+      const res = await loginWithGoogle({
+        email: account.email,
+        name: account.name,
+        picture: account.picture,
+        role: role || 'fan'
+      });
+      if (res.success) {
+        setShowGoogleModal(false);
+        navigate(redirectPath);
+      } else {
+        setError(res.message || 'Google authentication failed.');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Error authenticating with Google.');
+    } finally {
+      setGoogleSubmitting(false);
     }
   };
+
+  const handleCustomGoogleSubmit = async (e) => {
+    e.preventDefault();
+    if (!googleEmail.trim()) return;
+    await handleGoogleAuthSelect({
+      email: googleEmail.trim(),
+      name: googleName.trim() || googleEmail.split('@')[0],
+      picture: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(googleEmail.trim())}`
+    });
+  };
+
+  const fillDemoAccount = (accountId) => {
+    switchDemo(accountId);
+    navigate(redirectPath);
+  };
+
+  const googleProfiles = [
+    {
+      name: 'Alex Johnson',
+      email: 'alex.google@gmail.com',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'
+    },
+    {
+      name: 'Nicole Shayla',
+      email: 'nicole.google@gmail.com',
+      avatar: '/FhNtifmVQAEZDgwy.jpg'
+    }
+  ];
 
   return (
     <div className="auth-page-container">
       <div className="auth-card">
         
-        {/* Header & Logo */}
+        {/* Header */}
         <div className="auth-header">
           <div className="auth-badge">
-            <Sparkles style={{ width: 13, height: 13 }} />
+            <ShieldCheck style={{ width: 14, height: 14 }} />
             <span>Secure Creator Network</span>
           </div>
           
@@ -186,6 +240,29 @@ export default function AuthPage({ initialMode = 'login' }) {
             <AlertCircle style={{ width: 16, height: 16, flexShrink: 0 }} />
             <span>{error}</span>
           </div>
+        )}
+
+        {/* Google One-Click Authentication Button */}
+        {signupStep === 'details' && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowGoogleModal(true)}
+              className="auth-google-btn"
+            >
+              <svg style={{ width: 18, height: 18 }} viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+              </svg>
+              <span>{mode === 'login' ? 'Sign in with Google' : 'Sign up with Google'}</span>
+            </button>
+
+            <div className="auth-divider">
+              <span>Or with email credentials</span>
+            </div>
+          </>
         )}
 
         {/* Auth Form */}
@@ -248,29 +325,15 @@ export default function AuthPage({ initialMode = 'login' }) {
               </div>
 
               <div className="auth-input-group">
-                <label className="auth-label">Display Name (Optional)</label>
-                <div className="auth-input-wrapper">
-                  <UserIcon className="auth-input-icon" />
-                  <input
-                    type="text"
-                    placeholder="e.g. Sam Rivers"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="auth-input"
-                  />
-                </div>
-              </div>
-
-              <div className="auth-input-group">
                 <label className="auth-label">Username</label>
                 <div className="auth-input-wrapper">
                   <UserIcon className="auth-input-icon" />
                   <input
                     type="text"
                     required
-                    placeholder="e.g. cyber_sam"
+                    placeholder="e.g. alex99"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                     className="auth-input"
                   />
                 </div>
@@ -283,7 +346,7 @@ export default function AuthPage({ initialMode = 'login' }) {
                   <input
                     type="email"
                     required
-                    placeholder="name@domain.com"
+                    placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="auth-input"
@@ -292,13 +355,13 @@ export default function AuthPage({ initialMode = 'login' }) {
               </div>
 
               <div className="auth-input-group">
-                <label className="auth-label">Password (Min. 6 chars)</label>
+                <label className="auth-label">Password</label>
                 <div className="auth-input-wrapper">
                   <Lock className="auth-input-icon" />
                   <input
                     type="password"
                     required
-                    placeholder="Create a secure password"
+                    placeholder="At least 6 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="auth-input"
@@ -310,21 +373,20 @@ export default function AuthPage({ initialMode = 'login' }) {
             /* Signup Step 2: 6-Digit Email Verification Code */
             <div className="auth-otp-box">
               <div className="auth-otp-icon-wrap">
-                <KeyRound style={{ width: 22, height: 22 }} />
+                <KeyRound style={{ width: 22, height: 22, color: 'var(--auth-accent-cyan)' }} />
               </div>
 
               <h3 className="auth-otp-title">Enter Verification Code</h3>
               <p className="auth-otp-subtitle">
-                We sent a 6-digit confirmation code to <span className="auth-otp-email-highlight">{email}</span>. Please check your inbox (and spam folder) and enter it below.
+                A 6-digit confirmation code was dispatched to <span className="auth-otp-email-highlight">{email}</span>. Please check your email inbox and spam folder.
               </p>
 
-              <div style={{ margin: '18px 0' }}>
+              <div className="auth-input-group" style={{ margin: '20px 0 10px' }}>
                 <input
                   type="text"
                   maxLength={6}
-                  required
                   autoFocus
-                  placeholder="••••••"
+                  placeholder="000000"
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                   className="auth-otp-input-field"
@@ -337,14 +399,14 @@ export default function AuthPage({ initialMode = 'login' }) {
                   onClick={() => { setSignupStep('details'); setError(''); }}
                   className="auth-otp-back-btn"
                 >
-                  <ArrowLeft style={{ width: 13, height: 13 }} />
-                  <span>Edit Details</span>
+                  <ArrowLeft style={{ width: 14, height: 14 }} />
+                  <span>Change Email</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={handleResendCode}
                   disabled={resendCountdown > 0}
+                  onClick={handleResendCode}
                   className="auth-otp-resend-btn"
                 >
                   {resendCountdown > 0 ? `Resend code in ${resendCountdown}s` : 'Resend Code'}
@@ -391,6 +453,89 @@ export default function AuthPage({ initialMode = 'login' }) {
         </div>
 
       </div>
+
+      {/* Google Authentication Dialog */}
+      {showGoogleModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-[#131722] border border-[#273148] rounded-3xl p-6 max-w-md w-full shadow-2xl relative text-gray-200 space-y-4">
+            
+            <button
+              onClick={() => setShowGoogleModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 pb-3 border-b border-[#222b3e]">
+              <svg style={{ width: 24, height: 24 }} viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+              </svg>
+              <div>
+                <h3 className="font-extrabold text-white text-base">Sign in with Google</h3>
+                <p className="text-xs text-gray-400">Choose an account to continue to JustFans</p>
+              </div>
+            </div>
+
+            {/* Quick Demo Google Accounts */}
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Fast Account Select</p>
+              {googleProfiles.map((p, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleGoogleAuthSelect(p)}
+                  className="flex items-center gap-3 p-3 bg-[#181e2c] hover:bg-[#20283b] border border-[#273148] hover:border-[#00aff0] rounded-2xl cursor-pointer transition"
+                >
+                  <img src={p.avatar} alt={p.name} className="w-9 h-9 rounded-full object-cover border border-[#00aff0]/40" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-white truncate">{p.name}</p>
+                    <p className="text-[11px] text-gray-400 truncate">{p.email}</p>
+                  </div>
+                  <CheckCircle2 className="w-4 h-4 text-[#00aff0]" />
+                </div>
+              ))}
+            </div>
+
+            <div className="auth-divider">
+              <span>Or use your Google email</span>
+            </div>
+
+            {/* Custom Google Email Form */}
+            <form onSubmit={handleCustomGoogleSubmit} className="space-y-2.5">
+              <input
+                type="email"
+                required
+                placeholder="Your Google email address"
+                value={googleEmail}
+                onChange={(e) => setGoogleEmail(e.target.value)}
+                className="w-full bg-[#181e2c] border border-[#273148] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#00aff0]"
+              />
+              <input
+                type="text"
+                placeholder="Your Display Name (Optional)"
+                value={googleName}
+                onChange={(e) => setGoogleName(e.target.value)}
+                className="w-full bg-[#181e2c] border border-[#273148] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#00aff0]"
+              />
+              <button
+                type="submit"
+                disabled={googleSubmitting || !googleEmail.trim()}
+                className="w-full py-2.5 bg-[#00aff0] hover:bg-[#0094cc] disabled:opacity-40 text-black font-extrabold text-xs rounded-xl transition cursor-pointer"
+              >
+                {googleSubmitting ? 'Verifying with Google...' : 'Continue with this Google Account'}
+              </button>
+            </form>
+
+            <p className="text-[10px] text-gray-500 text-center">
+              Google accounts are automatically verified with no email code delays.
+            </p>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
