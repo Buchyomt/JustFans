@@ -9,7 +9,8 @@ import {
   Bookmark, 
   LayoutDashboard,
   LogIn,
-  User
+  User,
+  Sparkles
 } from 'lucide-react';
 
 export default function Sidebar() {
