@@ -31,6 +31,34 @@ router.get('/', (req, res) => {
   });
 });
 
+// Helper to enrich post with creator info and access rights
+const enrichPost = (post, currentUser, creator) => {
+  const isSubscribed = currentUser?.subscriptions?.some(s => s.creatorId === post.creatorId);
+  const isCreatorSelf = currentUser?.id === post.creatorId;
+  const isPurchased = currentUser ? post.unlockedUsers?.includes(currentUser.id) : false;
+  const isBookmarked = currentUser?.bookmarks?.includes(post.id);
+  const isLiked = currentUser ? (post.likedUsers?.includes(currentUser.id) || false) : false;
+
+  // Free posts (isLocked: false) are always accessible. Locked posts require subscription, purchase, or creator self.
+  const hasAccess = !post.isLocked || isSubscribed || isPurchased || isCreatorSelf;
+
+  return {
+    ...post,
+    hasAccess,
+    isSubscribed: Boolean(isSubscribed),
+    isBookmarked: Boolean(isBookmarked),
+    isLiked: Boolean(isLiked),
+    creator: {
+      id: creator.id,
+      name: creator.name,
+      username: creator.username,
+      avatar: creator.avatar,
+      verified: creator.verified,
+      category: creator.category
+    }
+  };
+};
+
 // GET /api/creators/:username
 router.get('/:username', optionalAuth, (req, res) => {
   const { username } = req.params;
@@ -45,6 +73,8 @@ router.get('/:username', optionalAuth, (req, res) => {
   const isSubscribed = currentUser ? currentUser.subscriptions?.some(s => s.creatorId === creator.id) : false;
   const isFollowing = currentUser ? currentUser.following?.includes(creator.id) : false;
 
+  const enrichedPosts = posts.map(p => enrichPost(p, currentUser, creator));
+
   res.json({
     success: true,
     creator: {
@@ -53,7 +83,7 @@ router.get('/:username', optionalAuth, (req, res) => {
       isFollowing: Boolean(isFollowing),
       postsCount: posts.length
     },
-    posts
+    posts: enrichedPosts
   });
 });
 

@@ -1,10 +1,10 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Sparkles } from 'lucide-react';
+import { Lock, ArrowLeft } from 'lucide-react';
 
 export default function ProtectedRoute({ children, requireCreator = false }) {
-  const { currentUser, isAuthenticated, loading, switchDemo } = useAuth();
+  const { currentUser, isAuthenticated, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -35,16 +35,16 @@ export default function ProtectedRoute({ children, requireCreator = false }) {
           </div>
           <h2 className="text-xl font-black text-white mb-2">Creator Account Required</h2>
           <p className="text-xs text-gray-400 leading-relaxed mb-6">
-            You are logged in as <span className="text-white font-bold">@{currentUser.username}</span> (Fan Account). Uploading 4K videos, paywalled media, and viewing revenue studio analytics requires a Creator channel.
+            You are logged in as <span className="text-white font-bold">@{currentUser.username}</span> (Fan Account). Uploading 4K videos, paywalled media, and viewing revenue studio analytics is reserved for Creator accounts.
           </p>
           <div className="space-y-3">
-            <button
-              onClick={() => switchDemo('creator-1')}
+            <Link
+              to="/feed"
               className="w-full py-3 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-white font-extrabold text-xs rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-95 transition flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 fill-white" />
-              <span>Switch to Demo Creator (Nicole Shayla)</span>
-            </button>
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Feed & Creators</span>
+            </Link>
           </div>
         </div>
       </div>

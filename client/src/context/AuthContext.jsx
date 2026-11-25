@@ -198,6 +198,10 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(prev => prev ? { ...prev, walletBalance: newBalance } : prev);
   };
 
+  const updateProfile = (updatedUser) => {
+    setCurrentUser(prev => prev ? { ...prev, ...updatedUser } : updatedUser);
+  };
+
   return (
     <AuthContext.Provider value={{
       token,
@@ -214,7 +218,8 @@ export const AuthProvider = ({ children }) => {
       authFetch,
       refreshUser: fetchCurrentUser,
       switchDemo,
-      updateBalance
+      updateBalance,
+      updateProfile
     }}>
       {children}
     </AuthContext.Provider>

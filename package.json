@@ -1,8 +1,10 @@
 {
   "name": "justfans-app",
   "version": "1.0.0",
-  "description": "Full-stack creator subscription and video platform",
+  "description": "Full-stack creator subscription and video platform for trans models and fans",
   "scripts": {
+    "build": "npm --prefix client install && npm --prefix client run build && npm --prefix server install",
+    "start": "node server/src/index.js",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
     "build:client": "npm --prefix client run build",

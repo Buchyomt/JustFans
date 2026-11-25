@@ -12,6 +12,8 @@ import subscriptionsRoutes from './routes/subscriptions.js';
 import messagesRoutes from './routes/messages.js';
 import analyticsRoutes from './routes/analytics.js';
 import videosRoutes from './routes/videos.js';
+import { connectDB } from './config/db.js';
+import mongoose from 'mongoose';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,14 +25,14 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Middleware - Increase payload limit to 100MB for 4K video thumbnails & multipart metadata
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Serve static uploaded video & image files from /uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -45,10 +47,13 @@ if (fs.existsSync(clientDistPath)) {
 
 // API Health Check
 app.get('/api/health', (req, res) => {
+  const isMongoConnected = mongoose.connection.readyState === 1;
   res.json({
     status: 'ok',
     app: 'JustFans Server',
-    database: 'In-Memory / File-Storage (MongoDB not required)',
+    database: isMongoConnected 
+      ? `MongoDB Atlas Connected (${mongoose.connection.name})` 
+      : 'In-Memory / File-Storage',
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
@@ -90,9 +95,16 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 JustFans Server running smoothly on http://localhost:${PORT}`);
-  console.log(`📡 Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`🎬 Video Uploads served at: http://localhost:${PORT}/uploads/videos/`);
-});
+// Start Server after connecting to Database
+const startServer = async () => {
+  await connectDB();
+
+  app.listen(PORT, () => {
+    console.log(`🚀 JustFans Server running smoothly on http://localhost:${PORT}`);
+    console.log(`📡 Health Check: http://localhost:${PORT}/api/health`);
+    console.log(`🎬 Video Uploads served at: http://localhost:${PORT}/uploads/videos/`);
+    console.log(`=============================================================\n`);
+  });
+};
+
+startServer();

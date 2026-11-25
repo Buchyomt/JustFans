@@ -5,12 +5,14 @@ import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 import FeedPage from './pages/FeedPage';
+import LandingPage from './pages/LandingPage';
 import ExplorePage from './pages/ExplorePage';
 import CreatorProfilePage from './pages/CreatorProfilePage';
 import CreatorStudioPage from './pages/CreatorStudioPage';
 import MessagesPage from './pages/MessagesPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import BookmarksPage from './pages/BookmarksPage';
+import ProfilePage from './pages/ProfilePage';
 import AuthPage from './pages/AuthPage';
 import Footer from './components/Footer';
 
@@ -29,7 +31,8 @@ export default function App() {
             <main className="flex-1 min-w-0 pb-20 md:pb-8">
               <Routes>
                 {/* Public Browsing Routes */}
-                <Route path="/" element={<FeedPage />} />
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/feed" element={<FeedPage />} />
                 <Route path="/explore" element={<ExplorePage />} />
                 <Route path="/creator/:username" element={<CreatorProfilePage />} />
                 
@@ -69,6 +72,14 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <BookmarksPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
                     </ProtectedRoute>
                   }
                 />

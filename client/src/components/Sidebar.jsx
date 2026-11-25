@@ -8,18 +8,23 @@ import {
   MessageSquare, 
   Bookmark, 
   LayoutDashboard,
-  LogIn
+  LogIn,
+  User
 } from 'lucide-react';
 
 export default function Sidebar() {
   const { currentUser, isAuthenticated } = useAuth();
 
   const navLinks = [
-    { to: '/', label: 'Home Feed', icon: Home },
+    { to: '/feed', label: 'Home Feed', icon: Home },
+    { to: '/', label: 'Platform & Perks', icon: Sparkles },
     { to: '/explore', label: 'Explore Creators', icon: Compass },
     { to: '/subscriptions', label: 'My Subscriptions', icon: UserCheck },
     { to: '/messages', label: 'Messages & PPV', icon: MessageSquare },
     { to: '/bookmarks', label: 'Saved Posts', icon: Bookmark },
+    ...(isAuthenticated ? [
+      { to: '/profile', label: 'My Profile & Photos', icon: User }
+    ] : []),
     ...(currentUser?.role === 'creator' ? [
       { to: '/studio', label: 'Creator Studio', icon: LayoutDashboard, highlight: true }
     ] : [])
@@ -63,18 +68,21 @@ export default function Sidebar() {
         {/* User Card at bottom of sidebar or Sign In CTA */}
         {isAuthenticated && currentUser ? (
           <div className="pt-4 border-t border-[#1f2638]">
-            <div className="flex items-center gap-3 p-3 bg-[#131722] rounded-2xl border border-[#273148]">
+            <Link
+              to="/profile"
+              className="flex items-center gap-3 p-3 bg-[#131722] hover:bg-[#192133] rounded-2xl border border-[#273148] hover:border-[#00aff0]/40 transition group cursor-pointer"
+            >
               <img
                 src={currentUser.avatar}
                 alt={currentUser.name}
-                className="w-10 h-10 rounded-full object-cover border border-[#00aff0]"
+                className="w-10 h-10 rounded-full object-cover border border-[#00aff0] group-hover:scale-105 transition-transform"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-white truncate">{currentUser.name}</p>
+                <p className="text-xs font-bold text-white truncate group-hover:text-[#00aff0] transition-colors">{currentUser.name}</p>
                 <p className="text-[11px] text-gray-400 truncate">@{currentUser.username}</p>
               </div>
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></div>
-            </div>
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" title="Online"></div>
+            </Link>
           </div>
         ) : (
           <div className="pt-4 border-t border-[#1f2638]">

@@ -4,13 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import { 
   Check, 
   X, 
-  ShieldCheck, 
   Sparkles, 
-  Star, 
   MessageSquare, 
   Send, 
   Lock, 
-  CreditCard,
   KeyRound,
   Copy,
   CheckCircle2,
@@ -19,7 +16,7 @@ import {
 
 export default function SubscribeModal({ creator, onClose, onSubscribeSuccess }) {
   const navigate = useNavigate();
-  const { currentUser, authFetch } = useAuth();
+  const { authFetch } = useAuth();
   
   const [selectedTier, setSelectedTier] = useState(creator?.tiers?.[0] || {
     id: "tier-std",
@@ -65,10 +62,24 @@ export default function SubscribeModal({ creator, onClose, onSubscribeSuccess })
   ];
 
   const paymentMethods = [
-    { label: "CashApp", tag: "$NicoleShaylaVIP", color: "text-emerald-400 bg-emerald-950/40 border-emerald-800/40" },
-    { label: "PayPal", tag: "paypal.me/nicoleshaylavip", color: "text-sky-400 bg-sky-950/40 border-sky-800/40" },
-    { label: "Zelle", tag: "payments@nicoleshayla.com", color: "text-purple-400 bg-purple-950/40 border-purple-800/40" },
-    { label: "Crypto (USDT/BTC)", tag: "TRC20: Request address in DM", color: "text-amber-400 bg-amber-950/40 border-amber-800/40" }
+    { 
+      label: "CashApp", 
+      tag: "Request Cashtag in DM", 
+      color: "text-emerald-400 bg-emerald-950/40 border-emerald-800/40",
+      hint: "Message Nicole to get active tag"
+    },
+    { 
+      label: "Gift Cards", 
+      tag: "Apple · Steam · Amazon · Visa", 
+      color: "text-pink-400 bg-pink-950/40 border-pink-800/40",
+      hint: "Send card code & receipt in DM"
+    },
+    { 
+      label: "Crypto (USDT / BTC)", 
+      tag: "TRC20: Request address in DM", 
+      color: "text-amber-400 bg-amber-950/40 border-amber-800/40",
+      hint: "Direct wallet address in DM"
+    }
   ];
 
   const handleCopy = (tag, label) => {
@@ -128,7 +139,7 @@ export default function SubscribeModal({ creator, onClose, onSubscribeSuccess })
       } else {
         setCodeError(data.message || 'Invalid VIP code.');
       }
-    } catch (err) {
+    } catch (_err) {
       setCodeError('Network error verifying code.');
     } finally {
       setCodeLoading(false);
@@ -315,7 +326,7 @@ export default function SubscribeModal({ creator, onClose, onSubscribeSuccess })
                 <span>Received your VIP Code from Nicole in Chat?</span>
               </p>
               <p className="text-gray-400">
-                After you make payment via CashApp, PayPal, or Zelle, Nicole will message you a VIP activation code (e.g. <code className="text-[#00aff0] font-mono font-bold">VIP60</code>) to instantly unlock all 4K videos.
+                After you make payment via CashApp, Gift Cards, or Crypto, Nicole will message you a VIP activation code (e.g. <code className="text-[#00aff0] font-mono font-bold">VIP60</code>) to instantly unlock all 4K videos.
               </p>
             </div>
 

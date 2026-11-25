@@ -24,7 +24,7 @@ router.get('/', requireAuth, (req, res) => {
           {
             id: `m-welcome-${currentUser.id}`,
             senderId: 'creator-1',
-            text: "Hey babe! 💕 Welcome to my exclusive VIP chat. If you're looking to subscribe ($60/mo) and unlock my full uncut 4K video vault, message me right here to get my approved CashApp, PayPal, Zelle, or Crypto details! 😈 Let me know what payment method works best for you!",
+            text: "Hey babe! 💕 Welcome to my exclusive VIP chat. If you're looking to subscribe ($60/mo) and unlock my full uncut 4K video vault, message me right here to get my approved CashApp, Gift Cards, or Crypto details! 😈 Let me know what payment method works best for you!",
             timestamp: new Date().toISOString(),
             tip: 0
           }
@@ -146,14 +146,14 @@ router.post('/:threadId', requireAuth, (req, res) => {
       };
     } else if (
       lower.includes('pay') || lower.includes('cashapp') || lower.includes('cash app') ||
-      lower.includes('paypal') || lower.includes('zelle') || lower.includes('crypto') || 
+      lower.includes('gift') || lower.includes('card') || lower.includes('crypto') || 
       lower.includes('subscribe') || lower.includes('method') || lower.includes('how') || 
       lower.includes('cost') || lower.includes('price') || lower.includes('access')
     ) {
       autoReply = {
         id: `m-nicole-${Date.now() + 1}`,
         senderId: 'creator-1',
-        text: "Hey love! 😈 Here are my approved direct payment methods for full VIP vault access ($60.00/mo):\n\n💸 CashApp: $NicoleShaylaVIP\n💳 PayPal: paypal.me/nicoleshaylavip\n📱 Zelle: payments@nicoleshayla.com\n⚡ Crypto (USDT-TRC20 / BTC): DM for wallet\n\nSend your $60 and reply here with your name/handle once done so I can activate your VIP Access! 💕",
+        text: "Hey love! 😈 Here are my approved direct payment methods for full VIP vault access ($60.00/mo):\n\n💸 CashApp: Request my active Cashtag in this chat\n🎁 Gift Cards: Apple, Steam, Amazon, Vanilla Visa (send code & receipt here)\n⚡ Crypto (USDT-TRC20 / BTC): DM me for wallet address\n\nOnce sent, reply here so I can verify and activate your VIP Access! 💕",
         timestamp: new Date(Date.now() + 1200).toISOString(),
         tip: 0
       };

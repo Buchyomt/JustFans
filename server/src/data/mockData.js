@@ -58,97 +58,97 @@ export const mockUsers = [
   },
   {
     id: "creator-2",
-    username: "marcus_beats",
-    name: "Marcus Cole",
-    email: "marcus@justfans.io",
+    username: "chloe_rose",
+    name: "Chloe Rose 🏳️‍⚧️",
+    email: "chloe@justfans.io",
     role: "creator",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80",
-    banner: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&auto=format&fit=crop&q=80",
-    category: "Music & Production",
-    bio: "Synthwave & Lo-Fi Producer 🎧 Ableton Masterclasses, sample packs, and unreleased stems every single Friday.",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+    banner: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=1200&auto=format&fit=crop&q=80",
+    category: "Trans & TS Goddesses",
+    bio: "22y Trans Glamour Model & Solo Queen 🏳️‍⚧️ Uncensored 4K solo tapes, girlfriend experience (GFE), lingerie try-ons, and intimate private DMs. New drops every Wednesday! 💋",
     subscriberCount: 2310,
     postCount: 88,
     likeCount: 41200,
-    monthlyPrice: 9.99,
-    vipPrice: 19.99,
+    monthlyPrice: 25.00,
+    vipPrice: 45.00,
     verified: true,
     tiers: [
       {
-        id: "tier-marcus-std",
-        name: "Beat Club",
-        price: 9.99,
+        id: "tier-chloe-std",
+        name: "VIP Solo Pass",
+        price: 25.00,
         perks: [
-          "Access to full unreleased music catalog",
-          "High-res WAV audio downloads",
-          "Song breakdown video series"
+          "Access to full uncut 4K video catalog",
+          "Weekly new solo drops & photo sets",
+          "Direct fan messaging privileges"
         ]
       },
       {
-        id: "tier-marcus-vip",
-        name: "Producer Mastermind",
-        price: 19.99,
+        id: "tier-chloe-vip",
+        name: "All-Access Goddess",
+        price: 45.00,
         perks: [
-          "All Beat Club perks",
-          "Royalty-free monthly sample pack & MIDI files",
-          "Track review in private live stream"
+          "All VIP Solo Pass perks",
+          "Exclusive behind-the-scenes & uncensored clips",
+          "Priority reply in private DMs"
         ]
       }
     ]
   },
   {
     id: "creator-3",
-    username: "elena_art",
-    name: "Elena Rostova",
-    email: "elena@justfans.io",
+    username: "sashafox_vip",
+    name: "Sasha Fox 🎀",
+    email: "sasha@justfans.io",
     role: "creator",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&auto=format&fit=crop&q=80",
-    banner: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1200&auto=format&fit=crop&q=80",
-    category: "Digital Art & 3D",
-    bio: "Concept Artist & Blender Sculptor 🎨 Fantasy worlds, speed-paint timelapses, and 3D printable assets.",
+    avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&auto=format&fit=crop&q=80",
+    banner: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=1200&auto=format&fit=crop&q=80",
+    category: "Cosplay & Alt Glamour",
+    bio: "21y Petite E-Girl & Alt Model 💕 4K anime & gaming cosplay try-ons, teasing solo sessions, and private Snapchat. Custom clip requests open!",
     subscriberCount: 3670,
     postCount: 110,
     likeCount: 68100,
-    monthlyPrice: 12.00,
-    vipPrice: 24.00,
+    monthlyPrice: 30.00,
+    vipPrice: 50.00,
     verified: true,
     tiers: [
       {
-        id: "tier-elena-std",
-        name: "Art Enthusiast",
-        price: 12.00,
+        id: "tier-sasha-std",
+        name: "Fan Access",
+        price: 30.00,
         perks: [
-          "Full 4K digital artwork wallpapers",
-          "Layered PSD & Procreate brush sets",
-          "Time-lapse video tutorials"
+          "Full 4K cosplay photo galleries & video teasers",
+          "Monthly themed exclusive wallpaper sets",
+          "Private community feed access"
         ]
       }
     ]
   },
   {
     id: "creator-4",
-    username: "cyber_kai",
-    name: "Kai Vance",
-    email: "kai@justfans.io",
+    username: "mayalin_ts",
+    name: "Maya Lin 🏳️‍⚧️💋",
+    email: "maya@justfans.io",
     role: "creator",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80",
-    banner: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&auto=format&fit=crop&q=80",
-    category: "Tech & Gaming",
-    bio: "Hardware overclocking, mechanical keyboards, and private game server tournaments 🕹️",
+    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=80",
+    banner: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=1200&auto=format&fit=crop&q=80",
+    category: "Trans & TS Goddesses",
+    bio: "23y Exotic TS Creator & Solo Star 🏳️‍⚧️ 100% Raw, uncut 4K tapes, POV morning shower sessions, and interactive toy play. Message me for direct customs!",
     subscriberCount: 1940,
     postCount: 65,
     likeCount: 29500,
-    monthlyPrice: 8.50,
-    vipPrice: 18.00,
+    monthlyPrice: 35.00,
+    vipPrice: 60.00,
     verified: true,
     tiers: [
       {
-        id: "tier-kai-std",
-        name: "Gamer Tier",
-        price: 8.50,
+        id: "tier-maya-std",
+        name: "Solo Access",
+        price: 35.00,
         perks: [
-          "Private Discord access",
-          "Stream VODs without ads",
-          "Monthly PC build giveaway entry"
+          "Weekly uncut 4K solo session drops",
+          "High-res uncensored photo sets",
+          "Exclusive custom video request access"
         ]
       }
     ]
@@ -184,7 +184,7 @@ export const mockPosts = [
     caption: "Unfiltered 4K bedroom tape just dropped for all my active VIP subscribers! Turn up your volume 😈",
     mediaType: "video",
     mediaUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4",
-    thumbnail: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&auto=format&fit=crop&q=80",
+    thumbnail: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&auto=format&fit=crop&q=80",
     isLocked: true,
     requiredTier: "Standard Fan",
     priceToUnlock: 18.66,
@@ -220,59 +220,59 @@ export const mockPosts = [
   {
     id: "post-3",
     creatorId: "creator-2",
-    title: "Deconstructing My Tokyo Nights Synth Track (Full Project Stems Inside)",
-    caption: "Here is the master session breakdown: how I layered the vintage analog synths and processed the bassline with saturation.",
+    title: "Late Night Silk Robe Tease & 4K Bedroom Solo 💋 [VIP Exclusive]",
+    caption: "Unfiltered 4K solo session in my favorite lace robe. Free for all my active VIP subscribers! Let me know what you think in the comments babe 💕",
     mediaType: "video",
     mediaUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    thumbnail: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800&auto=format&fit=crop&q=80",
+    thumbnail: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80",
     isLocked: true,
-    requiredTier: "Beat Club",
+    requiredTier: "VIP Solo Pass",
     priceToUnlock: 6.99,
-    likes: 842,
-    commentsCount: 64,
-    tipsTotal: 180,
+    likes: 1842,
+    commentsCount: 94,
+    tipsTotal: 280,
     createdAt: "2026-11-03T20:15:00Z",
-    tags: ["MusicProduction", "Ableton", "Synthwave"],
+    tags: ["TransQueen", "SoloTape", "4KExclusive"],
     comments: [
-      { id: "c4", user: "audio_nerd", text: "The sidechain compression tip on the snare changed everything for me.", createdAt: "2026-11-04T01:10:00Z" }
+      { id: "c4", user: "alex_fan", text: "You look absolutely incredible Chloe! 💖", createdAt: "2026-11-04T01:10:00Z" }
     ]
   },
   {
     id: "post-4",
     creatorId: "creator-3",
-    title: "Neon Dragon: 8-Hour Digital Painting Timelapse in 4K 🐉",
-    caption: "Sharing the raw speedpaint from start to finish with commentary on lighting, color balance, and perspective grids.",
+    title: "Cyberpunk Bunny Cosplay & Lingerie Try-On [Free Preview] 🎀",
+    caption: "Sharing a free teaser from this weekend's cyberpunk shoot! Full 35-photo 4K gallery unlocked for subscribers.",
     mediaType: "image",
-    mediaUrl: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000&auto=format&fit=crop&q=80",
-    thumbnail: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80",
+    mediaUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1000&auto=format&fit=crop&q=80",
+    thumbnail: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&auto=format&fit=crop&q=80",
     isLocked: false,
     requiredTier: "free",
     priceToUnlock: 0,
-    likes: 1950,
-    commentsCount: 142,
-    tipsTotal: 410,
+    likes: 2950,
+    commentsCount: 182,
+    tipsTotal: 510,
     createdAt: "2026-11-02T14:40:00Z",
-    tags: ["DigitalArt", "ConceptArt", "Timelapse"],
+    tags: ["Cosplay", "Egirl", "Tease"],
     comments: [
-      { id: "c5", user: "artlover_9", text: "The color palette in the scales is breathtaking!", createdAt: "2026-11-02T15:00:00Z" }
+      { id: "c5", user: "artlover_9", text: "The outfit and makeup are perfection! 💕", createdAt: "2026-11-02T15:00:00Z" }
     ]
   },
   {
     id: "post-5",
     creatorId: "creator-4",
-    title: "Liquid-Cooled Monster Rig: 4090 Overclock Test + Benchmark",
-    caption: "Pushed the clocks 25% beyond factory specs. Thermals held under 58°C with dual 360mm radiators. Benchmark graphs attached!",
-    mediaType: "image",
-    mediaUrl: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=1000&auto=format&fit=crop&q=80",
-    thumbnail: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&auto=format&fit=crop&q=80",
-    isLocked: false,
-    requiredTier: "free",
-    priceToUnlock: 0,
-    likes: 720,
-    commentsCount: 88,
-    tipsTotal: 120,
+    title: "POV Morning Shower & Dirty Talk (4K 60FPS) 🚿💋",
+    caption: "Start your morning with an intimate POV shower session. Uncensored, steamy, and raw. Message me for direct customs!",
+    mediaType: "video",
+    mediaUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    thumbnail: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop&q=80",
+    isLocked: true,
+    requiredTier: "Solo Access",
+    priceToUnlock: 9.99,
+    likes: 1720,
+    commentsCount: 118,
+    tipsTotal: 340,
     createdAt: "2026-11-01T11:00:00Z",
-    tags: ["PCMasterRace", "Overclocking", "Hardware"],
+    tags: ["POV", "GFE", "TransGoddess"],
     comments: []
   }
 ];
@@ -286,7 +286,7 @@ export const mockMessages = [
       {
         id: "m-welcome-1",
         senderId: "creator-1",
-        text: "Hey babe! 💕 Welcome to my exclusive VIP chat. If you're looking to subscribe ($60/mo) and unlock my full uncut 4K video vault, message me right here to get my approved CashApp, PayPal, Zelle, or Crypto details! 😈 Let me know what payment method works best for you!",
+        text: "Hey babe! 💕 Welcome to my exclusive VIP chat. If you're looking to subscribe ($60/mo) and unlock my full uncut 4K video vault, message me right here to get my approved CashApp, Gift Cards, or Crypto details! 😈 Let me know what payment method works best for you!",
         timestamp: "2026-11-15T10:00:00Z",
         tip: 0
       },
@@ -300,7 +300,7 @@ export const mockMessages = [
       {
         id: "m-nicole-1",
         senderId: "creator-1",
-        text: "Hey Alex! Thank you so much for the tip! 💕 You can send your $60 directly to my CashApp: $NicoleShaylaVIP or PayPal: paypal.me/nicoleshaylavip. Reply here once sent so I can verify and activate your full vault access! 💋",
+        text: "Hey Alex! Thank you so much for the tip! 💕 You can send your $60 directly via CashApp, Gift Cards (Apple/Steam/Amazon/Visa), or Crypto (USDT). Reply here once sent so I can verify and activate your full vault access! 💋",
         timestamp: "2026-11-15T10:30:00Z",
         tip: 0
       }

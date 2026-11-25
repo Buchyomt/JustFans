@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "test:db": "node src/test-db.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -14,6 +15,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.12.1",
     "multer": "^2.5.0",
     "nodemailer": "^10.5.0"
   }

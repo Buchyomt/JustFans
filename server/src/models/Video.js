@@ -40,6 +40,15 @@ const initialVideos = [
   }
 ];
 
+const TEASER_COVERS = [
+  "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop&q=80"
+];
+
 class VideoModel {
   constructor() {
     this.videos = [...initialVideos];
@@ -54,7 +63,9 @@ class VideoModel {
       videoUrl: videoUrl.trim(),
       uploaderId: uploaderId,
       createdAt: new Date().toISOString(),
-      thumbnail: thumbnail || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80",
+      thumbnail: (thumbnail && !thumbnail.match(/\.(mp4|mov|webm|mkv|m4v)($|\?)/i) && thumbnail !== '/FhNtifmVQAEZDgwy.jpg')
+        ? thumbnail
+        : TEASER_COVERS[Math.floor(Math.random() * TEASER_COVERS.length)],
       fileSize: fileSize || 0,
       mimeType: mimeType || "video/mp4",
       views: 0

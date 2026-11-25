@@ -5,8 +5,37 @@ import { mockPosts, mockUsers } from '../data/mockData.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
 import { UPLOAD_DIR } from '../middleware/upload.js';
 import { Video } from '../models/Video.js';
+import { saveBase64Image } from '../utils/imageSaver.js';
 
 const router = express.Router();
+
+export const DEFAULT_TEASER_COVERS = [
+  "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&auto=format&fit=crop&q=80"
+];
+
+export const resolveTeaserCover = (thumb, mediaUrl, seed) => {
+  const isVideo = (url) => url && /\.(mp4|mov|webm|mkv|m4v)($|\?)/i.test(url);
+  if (thumb) {
+    if (thumb.startsWith('data:image/')) {
+      return saveBase64Image(thumb, 'thumb');
+    }
+    if (!isVideo(thumb) && thumb !== '/FhNtifmVQAEZDgwy.jpg') {
+      return thumb;
+    }
+  }
+  if (mediaUrl && !isVideo(mediaUrl) && mediaUrl !== '/FhNtifmVQAEZDgwy.jpg') {
+    return mediaUrl;
+  }
+  const hash = (seed || Date.now().toString()).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return DEFAULT_TEASER_COVERS[Math.abs(hash) % DEFAULT_TEASER_COVERS.length];
+};
 
 // Helper to enrich post with creator details & viewer access
 const enrichPost = (post, currentUser) => {
@@ -99,14 +128,17 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(400).json({ success: false, message: "Post title is required." });
   }
 
+    const postId = `post-${Date.now()}`;
+  const resolvedCover = resolveTeaserCover(thumbnail, mediaUrl, postId);
+
   const newPost = {
-    id: `post-${Date.now()}`,
+    id: postId,
     creatorId: currentUser.id,
     title,
     caption: caption || "",
     mediaType: mediaType || "video",
     mediaUrl: mediaUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    thumbnail: thumbnail || mediaUrl || "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80",
+    thumbnail: resolvedCover,
     isLocked: Boolean(isLocked),
     requiredTier: requiredTier || (isLocked ? "Standard Fan" : "free"),
     priceToUnlock: Number(priceToUnlock) || 0,
@@ -278,6 +310,47 @@ router.post('/:id/bookmark', requireAuth, (req, res) => {
     isBookmarked,
     bookmarks: currentUser.bookmarks
   });
+});
+
+// PUT /api/posts/:id (PROTECTED - Creator self or Admin edit)
+router.put('/:id', requireAuth, (req, res) => {
+  try {
+    const post = mockPosts.find(p => p.id === req.params.id);
+    if (!post) {
+      return res.status(404).json({ success: false, message: "Post not found." });
+    }
+
+    const currentUser = req.user;
+    if (post.creatorId !== currentUser.id && currentUser.role !== 'admin') {
+      return res.status(403).json({ success: false, message: "You can only edit your own posts." });
+    }
+
+    const { title, caption, mediaUrl, mediaType, thumbnail, isLocked, priceToUnlock, tags } = req.body;
+
+    if (title !== undefined) post.title = title.trim();
+    if (caption !== undefined) post.caption = caption.trim();
+    if (mediaUrl !== undefined) post.mediaUrl = mediaUrl.trim();
+    if (mediaType !== undefined) post.mediaType = mediaType;
+    if (thumbnail !== undefined) {
+      post.thumbnail = resolveTeaserCover(thumbnail.trim(), post.mediaUrl, post.id);
+    } else if (mediaUrl !== undefined && (!post.thumbnail || post.thumbnail === '/FhNtifmVQAEZDgwy.jpg' || /\.(mp4|mov|webm|mkv|m4v)($|\?)/i.test(post.thumbnail))) {
+      post.thumbnail = resolveTeaserCover(null, mediaUrl.trim(), post.id);
+    }
+    if (isLocked !== undefined) post.isLocked = Boolean(isLocked);
+    if (priceToUnlock !== undefined) post.priceToUnlock = Number(priceToUnlock);
+    if (tags !== undefined) post.tags = Array.isArray(tags) ? tags : [tags];
+
+    post.updatedAt = new Date().toISOString();
+
+    return res.json({
+      success: true,
+      message: "Post updated successfully!",
+      post: enrichPost(post, currentUser)
+    });
+  } catch (err) {
+    console.error('[Edit Post Error]:', err);
+    return res.status(500).json({ success: false, message: "Failed to update post." });
+  }
 });
 
 // DELETE /api/posts/:id (PROTECTED - Creator self or Admin)

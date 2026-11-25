@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { extractVideoFrames, extractSingleFrameAtTime, formatVideoTime } from '../utils/videoThumbnails';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -15,11 +16,25 @@ import {
   X,
   Play,
   Trash2,
-  Camera
+  Camera,
+  Check,
+  Copy,
+  KeyRound,
+  UserCheck,
+  Shield
 } from 'lucide-react';
 
+const TEASER_PRESETS = [
+  "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop&q=80"
+];
+
 export default function CreatorStudioPage() {
-  const { currentUser, authFetch, switchDemo, refreshUser } = useAuth();
+  const { currentUser, authFetch, refreshUser } = useAuth();
   const [analytics, setAnalytics] = useState(null);
   const [uploadedVideos, setUploadedVideos] = useState([]);
   const [previewVideo, setPreviewVideo] = useState(null);
@@ -29,6 +44,10 @@ export default function CreatorStudioPage() {
   const [caption, setCaption] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
   const [mediaType, setMediaType] = useState('video');
+  const [customThumbnail, setCustomThumbnail] = useState(TEASER_PRESETS[0]);
+  const [extractedFrames, setExtractedFrames] = useState([]);
+  const [isExtractingFrames, setIsExtractingFrames] = useState(false);
+  const [scrubberTime, setScrubberTime] = useState(1);
   const [isLocked, setIsLocked] = useState(true);
   const [price, setPrice] = useState('18.66');
   
@@ -42,6 +61,71 @@ export default function CreatorStudioPage() {
   const [grantUsername, setGrantUsername] = useState('');
   const [grantMsg, setGrantMsg] = useState('');
   const [grantLoading, setGrantLoading] = useState(false);
+
+  // VIP Codes & Subscribers List states
+  const [vipCodes, setVipCodes] = useState([]);
+  const [subscribersList, setSubscribersList] = useState([]);
+  const [customNewCode, setCustomNewCode] = useState('');
+  const [newCodeTier, setNewCodeTier] = useState('Standard Fan');
+  const [newCodePrice, setNewCodePrice] = useState('60.00');
+  const [newCodeNote, setNewCodeNote] = useState('');
+  const [codeGenerating, setCodeGenerating] = useState(false);
+  const [copiedCode, setCopiedCode] = useState('');
+
+  const fetchVipCodes = async () => {
+    try {
+      const res = await authFetch('/api/subscriptions/vip-codes');
+      const data = await res.json();
+      if (data.success && data.codes) setVipCodes(data.codes);
+    } catch (e) {
+      console.warn('Failed to load VIP codes:', e);
+    }
+  };
+
+  const fetchSubscribers = async () => {
+    try {
+      const res = await authFetch('/api/subscriptions/subscribers');
+      const data = await res.json();
+      if (data.success && data.subscribers) setSubscribersList(data.subscribers);
+    } catch (e) {
+      console.warn('Failed to load subscribers:', e);
+    }
+  };
+
+  const handleCreateCode = async (e) => {
+    e.preventDefault();
+    setCodeGenerating(true);
+    try {
+      const res = await authFetch('/api/subscriptions/generate-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customCode: customNewCode.trim(),
+          tier: newCodeTier,
+          price: parseFloat(newCodePrice) || 60.00,
+          note: newCodeNote.trim()
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.code) {
+        setVipCodes(prev => [data.code, ...prev]);
+        setCustomNewCode('');
+        setNewCodeNote('');
+      } else {
+        alert(data.message || 'Failed to generate VIP code');
+      }
+    } catch {
+      alert('Network error generating VIP code');
+    } finally {
+      setCodeGenerating(false);
+    }
+  };
+
+  const handleCopyCode = (code) => {
+    navigator.clipboard?.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(''), 2000);
+  };
 
   const fetchAnalytics = async () => {
     try {
@@ -143,9 +227,11 @@ export default function CreatorStudioPage() {
   useEffect(() => {
     fetchAnalytics();
     fetchUploadedVideos();
+    fetchVipCodes();
+    fetchSubscribers();
   }, [currentUser]);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
       const validTypes = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-m4v', 'video/x-matroska'];
@@ -159,6 +245,30 @@ export default function CreatorStudioPage() {
         const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
         setTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
       }
+
+      // Automatically extract real video frames directly from this uploaded video!
+      setIsExtractingFrames(true);
+      try {
+        const frames = await extractVideoFrames(file, 6);
+        if (frames && frames.length > 0) {
+          setExtractedFrames(frames);
+          // Default to the first captured video frame!
+          setCustomThumbnail(frames[0].dataUrl);
+        }
+      } catch (frameErr) {
+        console.warn('Frame capture notice:', frameErr);
+      } finally {
+        setIsExtractingFrames(false);
+      }
+    }
+  };
+
+  const handleScrubFrame = async (newTime) => {
+    setScrubberTime(newTime);
+    if (!selectedVideoFile) return;
+    const snap = await extractSingleFrameAtTime(selectedVideoFile, newTime);
+    if (snap && snap.dataUrl) {
+      setCustomThumbnail(snap.dataUrl);
     }
   };
 
@@ -170,12 +280,15 @@ export default function CreatorStudioPage() {
     setPublishSuccess(false);
 
     try {
+      const activeThumbnail = customThumbnail || TEASER_PRESETS[Math.floor(Math.random() * TEASER_PRESETS.length)];
+
       if (mediaType === 'video' && selectedVideoFile) {
         // Multipart/form-data upload to POST /api/videos
         const formData = new FormData();
         formData.append('video', selectedVideoFile);
         formData.append('title', title);
         formData.append('description', caption);
+        formData.append('thumbnail', activeThumbnail);
         formData.append('isLocked', isLocked);
         formData.append('priceToUnlock', price);
 
@@ -207,6 +320,7 @@ export default function CreatorStudioPage() {
             mediaUrl: mediaUrl || (mediaType === 'video'
               ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
               : 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800'),
+            thumbnail: activeThumbnail,
             mediaType,
             isLocked,
             priceToUnlock: isLocked ? parseFloat(price) : 0,
@@ -267,15 +381,6 @@ export default function CreatorStudioPage() {
             </p>
           </div>
         </div>
-
-        {currentUser?.role !== 'creator' && (
-          <button
-            onClick={() => switchDemo('creator-1')}
-            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition cursor-pointer"
-          >
-            Switch to Nicole Shayla (Creator View)
-          </button>
-        )}
       </div>
 
       {/* KPI Cards Grid */}
@@ -472,7 +577,7 @@ export default function CreatorStudioPage() {
                 {mediaType === 'video' && uploadMode === 'file' ? (
                   <div>
                     <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                      Select Video File (Multer Handler: MP4, MOV, WebM · Max 150MB)
+                      Select Video File (Multer Handler: MP4, MOV, WebM · Max 1GB)
                     </label>
                     
                     {selectedVideoFile ? (
@@ -500,7 +605,7 @@ export default function CreatorStudioPage() {
                       <label className="border-2 border-dashed border-[#2b354e] hover:border-[#00aff0] bg-[#161c2b]/60 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition group">
                         <Upload className="w-8 h-8 text-gray-400 group-hover:text-[#00aff0] group-hover:scale-110 transition-transform mb-2" />
                         <span className="text-xs font-bold text-white mb-0.5">Click to choose video from your computer</span>
-                        <span className="text-[11px] text-gray-400">Supported formats: .MP4, .MOV, .WebM (Up to 150MB)</span>
+                        <span className="text-[11px] text-gray-400">Supported formats: .MP4, .MOV, .WebM (Up to 1GB 4K)</span>
                         <input
                           type="file"
                           accept="video/mp4,video/quicktime,video/webm,video/x-matroska,video/x-m4v"
@@ -524,6 +629,114 @@ export default function CreatorStudioPage() {
                     />
                   </div>
                 )}
+
+                {/* Teaser Cover Picked Directly from Video */}
+                <div className="p-4 bg-[#1a2133] rounded-2xl border border-[#2b354e] space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-pink-400 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Video Cover Thumbnail (Picked Directly from Your Video)</span>
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        {selectedVideoFile 
+                          ? "Select your favorite frame captured directly from your video:" 
+                          : "Upload a video file to pick frames from it, or select a teaser preset:"}
+                      </p>
+                    </div>
+
+                    {customThumbnail && (
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Check className="w-3 h-3" />
+                        Cover Selected
+                      </span>
+                    )}
+                  </div>
+
+                  {/* If Extracting Frames */}
+                  {isExtractingFrames && (
+                    <div className="p-4 bg-[#0e121b] border border-[#232b3f] rounded-xl flex items-center justify-center gap-2 text-xs text-cyan-300 animate-pulse">
+                      <Film className="w-4 h-4 animate-spin" />
+                      <span>Capturing high-definition frames directly from your video...</span>
+                    </div>
+                  )}
+
+                  {/* Real Captured Video Frames Grid */}
+                  {extractedFrames.length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
+                        Captured Video Moments (Click to set as cover):
+                      </span>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        {extractedFrames.map((frame, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => setCustomThumbnail(frame.dataUrl)}
+                            className={`relative aspect-video rounded-xl overflow-hidden cursor-pointer border-2 transition group ${
+                              customThumbnail === frame.dataUrl
+                                ? 'border-[#00aff0] scale-105 shadow-md shadow-cyan-500/30 ring-2 ring-[#00aff0]/30'
+                                : 'border-transparent opacity-70 hover:opacity-100 hover:scale-102'
+                            }`}
+                          >
+                            <img src={frame.dataUrl} alt={`Frame at ${frame.timeFormatted}`} className="w-full h-full object-cover" />
+                            <div className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/85 text-[9px] font-bold text-white rounded">
+                              {frame.timeFormatted}
+                            </div>
+                            {customThumbnail === frame.dataUrl && (
+                              <div className="absolute top-1 left-1 w-4 h-4 rounded-full bg-[#00aff0] text-black flex items-center justify-center shadow-md">
+                                <Check className="w-3 h-3 stroke-[3]" />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Frame Scrubber */}
+                      <div className="p-3 bg-[#0e121b] border border-[#232b3f] rounded-xl flex items-center gap-3">
+                        <span className="text-[11px] text-gray-400 font-bold whitespace-nowrap">
+                          Scrub Exact Frame ({formatVideoTime(scrubberTime)}):
+                        </span>
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="60"
+                          step="0.5"
+                          value={scrubberTime}
+                          onChange={(e) => handleScrubFrame(parseFloat(e.target.value))}
+                          className="flex-1 accent-[#00aff0] cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Curated Presets & URL Fallback */}
+                  <div className="pt-2 border-t border-[#232b3e]">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block mb-2">
+                      {extractedFrames.length > 0 ? "Or Choose Teaser Preset / Custom Image URL:" : "Curated Teaser Presets:"}
+                    </span>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {TEASER_PRESETS.map((cUrl, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => setCustomThumbnail(cUrl)}
+                          className={`relative aspect-video rounded-xl overflow-hidden cursor-pointer border-2 transition ${
+                            customThumbnail === cUrl ? 'border-[#00aff0] scale-105 shadow-md shadow-cyan-500/25 ring-2 ring-[#00aff0]/30' : 'border-transparent opacity-50 hover:opacity-100'
+                          }`}
+                        >
+                          <img src={cUrl} alt={`Preset ${idx + 1}`} className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+
+                    <input
+                      type="url"
+                      placeholder="Or paste custom image URL (https://...)"
+                      value={customThumbnail.startsWith('data:image/') ? '' : customThumbnail}
+                      onChange={(e) => setCustomThumbnail(e.target.value)}
+                      className="w-full bg-[#131722] border border-[#2b354e] rounded-xl px-3.5 py-2 text-xs text-white mt-2 focus:outline-none focus:border-[#00aff0]"
+                    />
+                  </div>
+                </div>
 
                 {/* Paywall Controls */}
                 <div className="p-4 bg-[#1a2133] rounded-2xl border border-[#2b354e] space-y-3">
@@ -646,7 +859,7 @@ export default function CreatorStudioPage() {
                       <span>Manually Grant VIP Subscription to Fan</span>
                     </h4>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      When a fan pays you via CashApp, PayPal, or Zelle, enter their username here to unlock Nicole's vault for them.
+                      When a fan pays you via CashApp, Gift Cards, or Crypto, enter their username here to unlock Nicole's vault for them.
                     </p>
                   </div>
                 </div>
@@ -681,33 +894,124 @@ export default function CreatorStudioPage() {
                 )}
               </div>
 
-              {/* VIP Activation Promo Codes Nicole Can Share in Chat */}
-              <div className="bg-[#181e2c] border border-[#2b354e] rounded-2xl p-5 shadow-sm space-y-3">
-                <h4 className="text-sm font-black text-white flex items-center gap-1.5">
-                  <Film className="w-4 h-4 text-purple-400" />
-                  <span>VIP Activation Codes for Direct Payers</span>
-                </h4>
-                <p className="text-xs text-gray-400 leading-relaxed">
-                  Send any of these codes to your fans in direct messages once they confirm payment of $60 or $99:
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  <div className="p-3 bg-[#131722] border border-[#273148] rounded-xl">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-mono font-bold text-sm text-[#00aff0]">VIP60</span>
-                      <span className="text-[10px] text-gray-400 font-bold">$60.00 Standard</span>
-                    </div>
-                    <p className="text-[11px] text-gray-400">Grants 30 days of full access to all 4K tapes & feed</p>
-                  </div>
-
-                  <div className="p-3 bg-[#131722] border border-[#273148] rounded-xl">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-mono font-bold text-sm text-purple-400">VIP99</span>
-                      <span className="text-[10px] text-gray-400 font-bold">$99.00 VIP All-Access</span>
-                    </div>
-                    <p className="text-[11px] text-gray-400">Grants 30 days All-Access + priority direct messaging</p>
+              {/* VIP Code Generator & Share in Chat */}
+              <div className="bg-[#181e2c] border border-[#2b354e] rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-black text-white flex items-center gap-1.5">
+                      <KeyRound className="w-4 h-4 text-purple-400" />
+                      <span>Instant VIP Activation Code Generator</span>
+                    </h4>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Generate unique codes to copy and send to fans directly in chat when they pay via CashApp, Crypto, or Gift Cards.
+                    </p>
                   </div>
                 </div>
+
+                {/* Code Generation Form */}
+                <form onSubmit={handleCreateCode} className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 p-3.5 bg-[#131722] border border-[#262f44] rounded-xl">
+                  <div className="sm:col-span-2">
+                    <input
+                      type="text"
+                      placeholder="Custom code (e.g. VIP-GOLD or leave blank for auto)"
+                      value={customNewCode}
+                      onChange={(e) => setCustomNewCode(e.target.value.toUpperCase())}
+                      className="w-full bg-[#181e2c] border border-[#2d3a54] rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#00aff0]"
+                    />
+                  </div>
+
+                  <div>
+                    <select
+                      value={newCodeTier}
+                      onChange={(e) => setNewCodeTier(e.target.value)}
+                      className="w-full bg-[#181e2c] border border-[#2d3a54] rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none"
+                    >
+                      <option value="Standard Fan">Standard ($60)</option>
+                      <option value="VIP All-Access">VIP All-Access ($99)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <button
+                      type="submit"
+                      disabled={codeGenerating}
+                      className="w-full py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:opacity-90 disabled:opacity-40 text-white font-extrabold text-xs rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>{codeGenerating ? "Generating..." : "Generate Code"}</span>
+                    </button>
+                  </div>
+                </form>
+
+                {/* Available Active VIP Codes List */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
+                    Active VIP Codes ({vipCodes.length}):
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {vipCodes.map((c, i) => (
+                      <div key={c.code || i} className="p-3 bg-[#131722] border border-[#273148] rounded-xl flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-black text-sm text-[#00aff0]">{c.code}</span>
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-950/80 text-purple-300 font-bold border border-purple-800/40">
+                              ${c.price}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-gray-400 mt-0.5">{c.tier} · {c.uses} used</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCode(c.code)}
+                          className="px-2.5 py-1 bg-[#1a2133] hover:bg-[#252f48] text-gray-300 hover:text-white rounded-lg text-[10px] font-bold border border-[#2e3b56] transition flex items-center gap-1 cursor-pointer"
+                        >
+                          {copiedCode === c.code ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedCode === c.code ? "Copied!" : "Copy"}</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Subscribers Roster */}
+              <div className="bg-[#181e2c] border border-[#2b354e] rounded-2xl p-5 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-black text-white flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Active VIP Subscribers ({subscribersList.length})</span>
+                  </h4>
+                  <span className="text-[10px] font-bold text-gray-400">Auto-synced</span>
+                </div>
+
+                {subscribersList.length === 0 ? (
+                  <p className="text-xs text-gray-500 py-4 text-center bg-[#131722] rounded-xl">
+                    No active subscribers yet. Fans who redeem VIP codes or are granted access will show here.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {subscribersList.map((sub) => (
+                      <div key={sub.id} className="p-3 bg-[#131722] border border-[#273148] rounded-xl flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={sub.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                            alt={sub.name}
+                            className="w-8 h-8 rounded-full object-cover border border-[#00aff0]/40"
+                          />
+                          <div>
+                            <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                              {sub.name} <span className="text-[10px] text-gray-400 font-normal">@{sub.username}</span>
+                            </p>
+                            <p className="text-[10px] text-emerald-400 font-semibold">{sub.tier} · Expires: {sub.expiresAt || 'Active'}</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-300 bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded-full">
+                          ACTIVE VIP
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

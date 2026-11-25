@@ -58,10 +58,11 @@ class UserModel {
   }
 
   // Create a new user with passwordHash and createdAt
-  async create({ username, email, password, role = 'fan', name, bio, avatar, category }) {
+  async create({ username, email, password, role = 'fan', name, bio, avatar, category, monthlyPrice }) {
     // Generate bcrypt hash
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
+    const resolvedPrice = Number(monthlyPrice) > 0 ? Number(monthlyPrice) : 60.00;
 
     const newUser = {
       id: `user-${Date.now()}`,
@@ -72,25 +73,25 @@ class UserModel {
       name: name || username,
       role: role || 'fan',
       avatar: avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(username)}`,
-      bio: bio || (role === 'creator' ? 'New JustFans Creator!' : 'Supporter & fan.'),
+      bio: bio || (role === 'creator' ? 'VIP Creator on JustFans' : 'Supporter & fan.'),
       walletBalance: 50.00,
       following: [],
       subscriptions: [],
       bookmarks: [],
       ...(role === 'creator' ? {
-        category: category || 'General',
+        category: category || 'Solo VIP',
         subscriberCount: 0,
         postCount: 0,
         likeCount: 0,
-        monthlyPrice: 9.99,
-        vipPrice: 19.99,
+        monthlyPrice: resolvedPrice,
+        vipPrice: Math.round(resolvedPrice * 1.65),
         verified: false,
         tiers: [
           {
             id: `tier-${Date.now()}`,
             name: "Standard Fan",
-            price: 9.99,
-            perks: ["Access to exclusive feed", "Comment & direct messaging"]
+            price: resolvedPrice,
+            perks: ["Full access to 4K uncensored video vault & feed", "Daily video drops & private feed", "Comment & direct messaging"]
           }
         ]
       } : {})
@@ -98,6 +99,20 @@ class UserModel {
 
     this.users.push(newUser);
     return newUser;
+  }
+
+  // Update existing user profile fields
+  update(id, updates = {}) {
+    const user = this.findById(id);
+    if (!user) return null;
+
+    const allowed = ['name', 'username', 'bio', 'avatar', 'banner', 'walletBalance'];
+    for (const key of allowed) {
+      if (updates[key] !== undefined && updates[key] !== null) {
+        user[key] = updates[key];
+      }
+    }
+    return user;
   }
 
   // Verify password against stored hash

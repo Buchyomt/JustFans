@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
 import { sendVerificationEmail } from '../utils/mailer.js';
+import { saveBase64Image } from '../utils/imageSaver.js';
+import { uploadAvatarMiddleware } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -33,7 +35,7 @@ export const pendingVerifications = new Map();
 // POST /api/auth/signup/request-code - Validate inputs and issue 6-digit email OTP
 router.post('/signup/request-code', async (req, res) => {
   try {
-    const { username, email, password, role, name, bio, category } = req.body;
+    const { username, email, password, role, name, bio, category, monthlyPrice } = req.body;
 
     // Input validations
     if (!username || !username.trim()) {
@@ -77,7 +79,8 @@ router.post('/signup/request-code', async (req, res) => {
         role: role || 'fan',
         name: name?.trim() || username.trim(),
         bio,
-        category
+        category,
+        monthlyPrice: Number(monthlyPrice) || 60.00
       },
       expiresAt: Date.now() + 10 * 60 * 1000
     });
@@ -205,7 +208,7 @@ router.post('/signup/resend-code', async (req, res) => {
 // POST /api/auth/signup - Direct password hashing with bcrypt + duplicate validation
 router.post('/signup', async (req, res) => {
   try {
-    const { username, email, password, role, name, bio, category } = req.body;
+    const { username, email, password, role, name, bio, category, monthlyPrice } = req.body;
 
     // Input validations
     if (!username || !username.trim()) {
@@ -323,27 +326,118 @@ router.get('/me', requireAuth, (req, res) => {
   });
 });
 
-// POST /api/auth/switch-demo - Generates valid token for quick switching between test accounts
-router.post('/switch-demo', (req, res) => {
-  const { userId } = req.body;
-  const user = User.findById(userId);
-  if (!user) {
-    return res.status(404).json({ success: false, message: 'Demo user not found.' });
-  }
+// PUT /api/auth/profile - Update fan or creator profile info (name, username, bio, avatar, banner)
+router.put('/profile', requireAuth, async (req, res) => {
+  try {
+    const { name, username, bio, avatar, banner } = req.body;
+    const currentUser = req.user;
 
-  const token = generateToken(user);
-  return res.json({
-    success: true,
-    message: `Switched demo account to ${user.name} (${user.role})`,
-    token,
-    user: User.toSafeUser(user)
+    // If username is changing, ensure it's not taken by another user
+    if (username && username.trim().toLowerCase() !== currentUser.username.toLowerCase()) {
+      const cleanUsername = username.trim().toLowerCase();
+      const existing = User.findByUsername(cleanUsername);
+      if (existing && existing.id !== currentUser.id) {
+        return res.status(400).json({
+          success: false,
+          message: 'That username is already taken by another user.'
+        });
+      }
+      currentUser.username = cleanUsername;
+    }
+
+    if (name && name.trim()) {
+      currentUser.name = name.trim();
+    }
+
+    if (bio !== undefined) {
+      currentUser.bio = bio.trim();
+    }
+
+    // Save base64 avatar or set avatar URL
+    if (avatar) {
+      if (typeof avatar === 'string' && avatar.startsWith('data:image/')) {
+        currentUser.avatar = saveBase64Image(avatar, 'avatar');
+      } else {
+        currentUser.avatar = avatar;
+      }
+    }
+
+    // Save base64 banner or set banner URL
+    if (banner) {
+      if (typeof banner === 'string' && banner.startsWith('data:image/')) {
+        currentUser.banner = saveBase64Image(banner, 'banner');
+      } else {
+        currentUser.banner = banner;
+      }
+    }
+
+    // Update in User model
+    User.update(currentUser.id, {
+      name: currentUser.name,
+      username: currentUser.username,
+      bio: currentUser.bio,
+      avatar: currentUser.avatar,
+      banner: currentUser.banner
+    });
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully!',
+      user: User.toSafeUser(currentUser)
+    });
+  } catch (err) {
+    console.error('[Profile Update Error]:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error while updating profile.'
+    });
+  }
+});
+
+// POST /api/auth/upload-avatar - Direct image file upload for avatar or banner
+router.post('/upload-avatar', requireAuth, uploadAvatarMiddleware, (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No image file uploaded.' });
+    }
+    const fileUrl = `/uploads/avatars/${req.file.filename}`;
+    return res.json({
+      success: true,
+      url: fileUrl,
+      message: 'Image uploaded successfully!'
+    });
+  } catch (err) {
+    console.error('[Avatar Upload Error]:', err);
+    return res.status(500).json({ success: false, message: 'Failed to upload image file.' });
+  }
+});
+
+// POST /api/auth/switch-demo - Disabled for security so users must sign in with their own credentials
+router.post('/switch-demo', (req, res) => {
+  return res.status(403).json({
+    success: false,
+    message: 'Demo switching is disabled. Please log in directly with your account credentials.'
   });
 });
 
-// POST /api/auth/google - Authenticate or register with Google profile
+// POST /api/auth/google - Authenticate or register with Google profile / Google ID Token
 router.post('/google', async (req, res) => {
   try {
-    const { email, name, picture, role = 'fan' } = req.body;
+    let { email, name, picture, role = 'fan', credential } = req.body;
+
+    // If Google ID token is provided, decode payload
+    if (credential && (!email || !name)) {
+      try {
+        const payloadBase64 = credential.split('.')[1];
+        const decodedStr = Buffer.from(payloadBase64, 'base64').toString('utf8');
+        const payload = JSON.parse(decodedStr);
+        if (payload.email) email = payload.email;
+        if (payload.name) name = payload.name;
+        if (payload.picture) picture = payload.picture;
+      } catch (decodeErr) {
+        console.warn('[Google Auth Token Decode Warning]:', decodeErr.message);
+      }
+    }
 
     if (!email || !email.trim()) {
       return res.status(400).json({

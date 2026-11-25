@@ -5,6 +5,7 @@ import { Video } from '../models/Video.js';
 import { requireAuth } from '../middleware/auth.js';
 import { handleVideoUpload, UPLOAD_DIR } from '../middleware/upload.js';
 import { mockPosts } from '../data/mockData.js';
+import { resolveTeaserCover } from './posts.js';
 
 const router = express.Router();
 
@@ -68,6 +69,20 @@ router.get('/:id', (req, res) => {
   }
 });
 
+// POST /api/videos/upload-file - Direct video file uploader for editing/replacing post media
+router.post('/upload-file', requireAuth, handleVideoUpload('video'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No video file provided.' });
+  }
+  const videoUrl = `/uploads/videos/${req.file.filename}`;
+  return res.json({
+    success: true,
+    videoUrl,
+    filename: req.file.filename,
+    size: req.file.size
+  });
+});
+
 // POST /api/videos - Protected endpoint to upload video file and save metadata
 router.post('/', requireAuth, handleVideoUpload('video'), async (req, res) => {
   try {
@@ -105,13 +120,16 @@ router.post('/', requireAuth, handleVideoUpload('video'), async (req, res) => {
       });
     }
 
+    // Resolve a unique eye-catching teaser cover if none provided
+    const resolvedThumb = resolveTeaserCover(thumbnail, videoUrl, `vid-${Date.now()}`);
+
     // Write metadata to Video model
     const newVideo = Video.create({
       title,
       description,
       videoUrl,
       uploaderId,
-      thumbnail,
+      thumbnail: resolvedThumb,
       fileSize,
       mimeType
     });
@@ -124,7 +142,7 @@ router.post('/', requireAuth, handleVideoUpload('video'), async (req, res) => {
       caption: newVideo.description || "",
       mediaType: "video",
       mediaUrl: videoUrl,
-      thumbnail: newVideo.thumbnail,
+      thumbnail: resolvedThumb,
       isLocked: isLocked === 'true' || isLocked === true,
       requiredTier: (isLocked === 'true' || isLocked === true) ? "Standard Fan" : "free",
       priceToUnlock: Number(priceToUnlock) || 0,

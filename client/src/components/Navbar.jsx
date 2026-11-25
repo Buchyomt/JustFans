@@ -11,11 +11,15 @@ import {
   Sparkles,
   LogOut,
   LogIn,
-  UserPlus
+  UserPlus,
+  MessageSquare,
+  ShieldCheck,
+  Bookmark,
+  User
 } from 'lucide-react';
 
 export default function Navbar() {
-  const { currentUser, isAuthenticated, logout, switchDemo, updateBalance } = useAuth();
+  const { currentUser, isAuthenticated, logout, updateBalance } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showSwitchMenu, setShowSwitchMenu] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
@@ -36,14 +40,6 @@ export default function Navbar() {
       setShowWalletModal(false);
     }
   };
-
-  const demoAccounts = [
-    { id: 'user-fan-1', name: 'Alex Johnson', role: 'fan', tag: 'Demo Fan' },
-    { id: 'creator-1', name: 'Nicole Shayla', role: 'creator', tag: 'Star Creator (@uni_ques78)' },
-    { id: 'creator-2', name: 'Marcus Cole', role: 'creator', tag: 'Guest Creator' },
-    { id: 'creator-3', name: 'Elena Rostova', role: 'creator', tag: 'Guest Creator' },
-    { id: 'creator-4', name: 'Kai Vance', role: 'creator', tag: 'Guest Creator' }
-  ];
 
   return (
     <>
@@ -76,6 +72,13 @@ export default function Navbar() {
           </form>
 
           {/* Quick link to Star Creator */}
+          <Link
+            to="/feed"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#161c2b] hover:bg-[#1f283d] border border-[#273148] text-gray-200 hover:text-white text-xs font-bold transition flex-shrink-0"
+          >
+            <Flame className="w-3.5 h-3.5 text-pink-400" />
+            <span>Social Feed</span>
+          </Link>
           <Link
             to="/creator/uni_ques78"
             className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-950/50 border border-cyan-700/40 text-cyan-300 hover:text-white hover:border-[#00aff0] text-xs font-bold transition flex-shrink-0"
@@ -141,40 +144,135 @@ export default function Navbar() {
                   </button>
 
                   {showSwitchMenu && (
-                    <div className="absolute right-0 mt-2 w-72 bg-[#131722] border border-[#262c3d] rounded-2xl shadow-2xl p-2 z-50">
-                      <div className="px-3 py-2 border-b border-[#262c3d]/60 mb-1">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Switch Test Identity</p>
-                        <p className="text-[11px] text-gray-500">Fast one-click persona switching</p>
-                      </div>
-                      <div className="space-y-1 mb-2">
-                        {demoAccounts.map((acc) => (
-                          <button
-                            key={acc.id}
-                            onClick={() => {
-                              switchDemo(acc.id);
-                              setShowSwitchMenu(false);
-                            }}
-                            className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition cursor-pointer ${
-                              currentUser?.id === acc.id ? 'bg-[#00aff0]/15 border border-[#00aff0]/40' : 'hover:bg-[#1a2030]'
-                            }`}
-                          >
-                            <div>
-                              <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                                {acc.name}
-                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${
-                                  acc.role === 'creator' ? 'bg-purple-900/60 text-purple-300' : 'bg-blue-900/60 text-blue-300'
-                                }`}>
-                                  {acc.role}
-                                </span>
-                              </p>
-                              <p className="text-[11px] text-gray-400">{acc.tag}</p>
+                    <div className="absolute right-0 mt-2 w-72 bg-[#131722] border border-[#262c3d] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+                      
+                      {currentUser?.role === 'creator' ? (
+                        /* Creator / Model Owner Menu */
+                        <>
+                          <div className="px-3 py-2 border-b border-[#262c3d]/60 mb-2">
+                            <div className="flex items-center gap-2 mb-1">
+                              <img src={currentUser.avatar} alt={currentUser.name} className="w-8 h-8 rounded-full object-cover border border-purple-500" />
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-white truncate">{currentUser.name}</p>
+                                <p className="text-[10px] text-purple-400 font-semibold truncate">@{currentUser.username} · Model Owner</p>
+                              </div>
                             </div>
-                            {currentUser?.id === acc.id && (
-                              <Check className="w-4 h-4 text-[#00aff0]" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
+                          </div>
+
+                          <div className="space-y-1 mb-2 px-1">
+                            <Link
+                              to="/profile"
+                              onClick={() => setShowSwitchMenu(false)}
+                              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-purple-200 hover:text-white bg-[#1a2338] hover:bg-[#222e47] border border-purple-500/30 transition mb-1"
+                            >
+                              <User className="w-4 h-4 text-purple-400" />
+                              <span>Edit Profile & Photos</span>
+                            </Link>
+                            <Link
+                              to="/studio"
+                              onClick={() => setShowSwitchMenu(false)}
+                              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-gray-200 hover:text-white hover:bg-[#1a2030] transition"
+                            >
+                              <LayoutDashboard className="w-4 h-4 text-purple-400" />
+                              <span>Upload Studio & Vault</span>
+                            </Link>
+                            <Link
+                              to="/creator/uni_ques78"
+                              onClick={() => setShowSwitchMenu(false)}
+                              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-gray-200 hover:text-white hover:bg-[#1a2030] transition"
+                            >
+                              <Sparkles className="w-4 h-4 text-[#00aff0]" />
+                              <span>View My Live Channel</span>
+                            </Link>
+                            <Link
+                              to="/messages"
+                              onClick={() => setShowSwitchMenu(false)}
+                              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-gray-200 hover:text-white hover:bg-[#1a2030] transition"
+                            >
+                              <MessageSquare className="w-4 h-4 text-emerald-400" />
+                              <span>Fan DMs & Inquiries</span>
+                            </Link>
+                          </div>
+                        </>
+                      ) : (
+                        /* Regular Fan Account Menu - ZERO IDENTITY SWITCHING */
+                        <>
+                          <div className="px-3 py-2.5 border-b border-[#262c3d]/60 mb-2">
+                            <div className="flex items-center gap-2.5 mb-1.5">
+                              <img src={currentUser.avatar} alt={currentUser.name} className="w-9 h-9 rounded-full object-cover border border-[#00aff0]/60" />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-white truncate">{currentUser.name}</p>
+                                <p className="text-[10px] text-cyan-400 font-medium truncate">@{currentUser.username}</p>
+                              </div>
+                              <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-800/40 text-cyan-300">
+                                Fan
+                              </span>
+                            </div>
+                            <div className="p-2 rounded-xl bg-[#0c1017] border border-[#232b3f] flex items-center justify-between mt-2">
+                              <span className="text-[11px] text-gray-400">Wallet Balance:</span>
+                              <span className="text-xs font-black text-emerald-400">${(currentUser?.walletBalance || 0).toFixed(2)}</span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1 mb-2 px-1">
+                            <Link
+                              to="/profile"
+                              onClick={() => setShowSwitchMenu(false)}
+                              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-cyan-200 hover:text-white bg-[#162035] hover:bg-[#1e2a44] border border-[#00aff0]/30 transition mb-1"
+                            >
+                              <User className="w-4 h-4 text-[#00aff0]" />
+                              <span>Edit Profile & Photos</span>
+                            </Link>
+                            <Link
+                              to="/creator/uni_ques78"
+                              onClick={() => setShowSwitchMenu(false)}
+                              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-gray-200 hover:text-white hover:bg-[#1a2030] transition"
+                            >
+                              <Sparkles className="w-4 h-4 text-[#00aff0]" />
+                              <span>Nicole's VIP Channel ($60/mo)</span>
+                            </Link>
+
+                            <Link
+                              to="/subscriptions"
+                              onClick={() => setShowSwitchMenu(false)}
+                              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-gray-200 hover:text-white hover:bg-[#1a2030] transition"
+                            >
+                              <ShieldCheck className="w-4 h-4 text-purple-400" />
+                              <span>My Subscriptions</span>
+                            </Link>
+
+                            <Link
+                              to="/messages?creator=creator-1"
+                              onClick={() => setShowSwitchMenu(false)}
+                              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-gray-200 hover:text-white hover:bg-[#1a2030] transition"
+                            >
+                              <MessageSquare className="w-4 h-4 text-emerald-400" />
+                              <span>Direct Message Nicole</span>
+                            </Link>
+
+                            <Link
+                              to="/bookmarks"
+                              onClick={() => setShowSwitchMenu(false)}
+                              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-gray-200 hover:text-white hover:bg-[#1a2030] transition"
+                            >
+                              <Bookmark className="w-4 h-4 text-amber-400" />
+                              <span>Saved & Bookmarked Media</span>
+                            </Link>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowSwitchMenu(false);
+                                setShowWalletModal(true);
+                              }}
+                              className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs font-semibold text-cyan-300 hover:text-cyan-200 hover:bg-[#1a2030] transition cursor-pointer"
+                            >
+                              <Wallet className="w-4 h-4 text-cyan-400" />
+                              <span>Add Funds to Wallet</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
 
                       {/* Log out */}
                       <div className="pt-1 border-t border-[#262c3d]/60">

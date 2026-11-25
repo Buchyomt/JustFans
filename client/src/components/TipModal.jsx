@@ -44,7 +44,7 @@ export default function TipModal({ post, creator, onClose, onTipSuccess }) {
       } else {
         setError(data.message || 'Tip failed');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Network error while processing tip.');
     } finally {
       setIsSubmitting(false);

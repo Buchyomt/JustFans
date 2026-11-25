@@ -77,37 +77,130 @@ router.post('/subscribe', requireAuth, (req, res) => {
   });
 });
 
+// Dynamic in-memory store for VIP promo & activation codes
+const dynamicVipCodes = [
+  { code: 'VIP60', creatorId: 'creator-1', tier: 'Standard Fan', price: 60.00, uses: 48, maxUses: 9999, createdAt: '2026-11-01T00:00:00Z', note: 'Standard VIP Access ($60)' },
+  { code: 'VIP99', creatorId: 'creator-1', tier: 'VIP All-Access', price: 99.00, uses: 19, maxUses: 9999, createdAt: '2026-11-01T00:00:00Z', note: 'VIP All-Access + Priority DM ($99)' },
+  { code: 'NICOLE2026', creatorId: 'creator-1', tier: 'Standard Fan', price: 60.00, uses: 12, maxUses: 9999, createdAt: '2026-11-05T00:00:00Z', note: 'Launch Promo Code' }
+];
+
+// GET /api/subscriptions/subscribers (PROTECTED - Creator Only)
+router.get('/subscribers', requireAuth, (req, res) => {
+  const currentUser = req.user;
+  if (currentUser.role !== 'creator' && currentUser.role !== 'admin') {
+    return res.status(403).json({ success: false, message: "Only creators can view subscriber roster." });
+  }
+
+  const creatorId = currentUser.id;
+  const subscriberFans = [];
+
+  mockUsers.forEach(u => {
+    const sub = u.subscriptions?.find(s => s.creatorId === creatorId);
+    if (sub) {
+      subscriberFans.push({
+        id: u.id,
+        username: u.username,
+        name: u.name,
+        avatar: u.avatar,
+        tier: sub.tier,
+        price: sub.price,
+        expiresAt: sub.expiresAt
+      });
+    }
+  });
+
+  return res.json({
+    success: true,
+    count: subscriberFans.length,
+    subscribers: subscriberFans
+  });
+});
+
+// GET /api/subscriptions/vip-codes (PROTECTED - Creator Only)
+router.get('/vip-codes', requireAuth, (req, res) => {
+  const currentUser = req.user;
+  if (currentUser.role !== 'creator' && currentUser.role !== 'admin') {
+    return res.status(403).json({ success: false, message: "Only creators can view activation codes." });
+  }
+
+  const codes = dynamicVipCodes.filter(c => c.creatorId === currentUser.id);
+  return res.json({
+    success: true,
+    codes
+  });
+});
+
+// POST /api/subscriptions/generate-code (PROTECTED - Creator Only)
+router.post('/generate-code', requireAuth, (req, res) => {
+  const currentUser = req.user;
+  if (currentUser.role !== 'creator' && currentUser.role !== 'admin') {
+    return res.status(403).json({ success: false, message: "Only creators can generate VIP codes." });
+  }
+
+  const { customCode, tier = 'Standard Fan', price = 60.00, note } = req.body;
+  const generatedCode = (customCode && customCode.trim())
+    ? customCode.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '')
+    : `VIP-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+
+  const existing = dynamicVipCodes.find(c => c.code === generatedCode);
+  if (existing) {
+    return res.status(400).json({ success: false, message: `Code ${generatedCode} already exists.` });
+  }
+
+  const newCodeRecord = {
+    code: generatedCode,
+    creatorId: currentUser.id,
+    tier,
+    price: Number(price) || 60.00,
+    uses: 0,
+    maxUses: 100,
+    createdAt: new Date().toISOString(),
+    note: note || `Generated for paying fan via chat`
+  };
+
+  dynamicVipCodes.unshift(newCodeRecord);
+
+  return res.status(201).json({
+    success: true,
+    message: `VIP code ${generatedCode} generated successfully!`,
+    code: newCodeRecord
+  });
+});
+
 // POST /api/subscriptions/redeem-code (PROTECTED) - Redeem VIP code provided by Nicole in chat
 router.post('/redeem-code', requireAuth, (req, res) => {
   const { code, creatorId = 'creator-1' } = req.body;
   const cleanCode = (code || '').trim().toUpperCase();
 
-  const VALID_CODES = ['VIP60', 'VIP99', 'NICOLE2026', 'SHAYLA60', 'ACCESS60'];
-  if (!VALID_CODES.includes(cleanCode)) {
+  const foundDynamic = dynamicVipCodes.find(c => c.code === cleanCode);
+  const VALID_FALLBACK_CODES = ['VIP60', 'VIP99', 'NICOLE2026', 'SHAYLA60', 'ACCESS60'];
+
+  if (!foundDynamic && !VALID_FALLBACK_CODES.includes(cleanCode)) {
     return res.status(400).json({
       success: false,
       message: 'Invalid VIP activation code. Please message Nicole to receive your verified payment code.'
     });
   }
 
-  const creator = mockUsers.find(u => u.id === creatorId);
+  const targetCreatorId = foundDynamic?.creatorId || creatorId;
+  const creator = mockUsers.find(u => u.id === targetCreatorId);
   const currentUser = req.user;
 
   if (!currentUser.subscriptions) currentUser.subscriptions = [];
   const expiryDate = new Date();
   expiryDate.setDate(expiryDate.getDate() + 30);
 
-  const tier = cleanCode === 'VIP99' ? 'VIP All-Access' : 'Standard Fan';
-  const price = cleanCode === 'VIP99' ? 99.00 : 60.00;
+  const tier = foundDynamic ? foundDynamic.tier : (cleanCode === 'VIP99' ? 'VIP All-Access' : 'Standard Fan');
+  const price = foundDynamic ? foundDynamic.price : (cleanCode === 'VIP99' ? 99.00 : 60.00);
 
   const subRecord = {
-    creatorId,
+    creatorId: targetCreatorId,
     tier,
     price,
     expiresAt: expiryDate.toISOString().split('T')[0]
   };
 
-  const existingIdx = currentUser.subscriptions.findIndex(s => s.creatorId === creatorId);
+  const existingIdx = currentUser.subscriptions.findIndex(s => s.creatorId === targetCreatorId);
   if (existingIdx > -1) {
     currentUser.subscriptions[existingIdx] = subRecord;
   } else {
@@ -117,9 +210,13 @@ router.post('/redeem-code', requireAuth, (req, res) => {
     }
   }
 
+  if (foundDynamic) {
+    foundDynamic.uses = (foundDynamic.uses || 0) + 1;
+  }
+
   return res.json({
     success: true,
-    message: `🎉 VIP Access Activated! Welcome to Nicole Shayla's exclusive vault.`,
+    message: `🎉 VIP Access Activated! Welcome to ${creator?.name || 'Nicole'}'s exclusive vault.`,
     subscription: subRecord
   });
 });

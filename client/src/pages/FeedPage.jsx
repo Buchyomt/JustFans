@@ -11,10 +11,10 @@ import {
   Users, 
   Lock,
   PlusCircle, 
-  TrendingUp, 
   Flame, 
   CheckCircle2,
-  MessageSquare
+  MessageSquare,
+  Star
 } from 'lucide-react';
 
 export default function FeedPage() {
@@ -23,7 +23,7 @@ export default function FeedPage() {
 
   const [posts, setPosts] = useState([]);
   const [creators, setCreators] = useState([]);
-  const [filter, setFilter] = useState('star'); // Defaults to Nicole's Exclusive Vault
+  const [filter, setFilter] = useState('all'); // Defaults to All Models Live Social Feed
   const [loading, setLoading] = useState(true);
 
   // Identify featured star creator (Nicole Shayla)
@@ -43,11 +43,41 @@ export default function FeedPage() {
   const [newPrice, setNewPrice] = useState('4.99');
   const [isPosting, setIsPosting] = useState(false);
 
+  // Subscriber Poll & Content Request Vault State
+  const [pollOptions, setPollOptions] = useState([
+    { id: 1, title: "Lingerie & Silk Try-On + Fan Q&A (4K HDR)", votes: 342, tag: "🔥 Trending" },
+    { id: 2, title: "Late Night Hot Tub Solo Session (4K 60FPS)", votes: 298, tag: "💎 Exclusive" },
+    { id: 3, title: "POV Romantic Girlfriend Experience", votes: 165, tag: "💋 Intimate" }
+  ]);
+  const [votedOptionId, setVotedOptionId] = useState(() => {
+    try {
+      return localStorage.getItem('justfans_poll_voted') ? Number(localStorage.getItem('justfans_poll_voted')) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [pollSuccessMsg, setPollSuccessMsg] = useState('');
+
+  const handleVote = (optionId) => {
+    if (votedOptionId) return;
+    setPollOptions(prev => prev.map(opt => opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt));
+    setVotedOptionId(optionId);
+    try {
+      localStorage.setItem('justfans_poll_voted', String(optionId));
+    } catch (e) {
+      console.warn(e);
+    }
+    setPollSuccessMsg("Your VIP vote has been submitted to Nicole's production queue! 💋");
+    setTimeout(() => setPollSuccessMsg(''), 4500);
+  };
+
+  const totalPollVotes = pollOptions.reduce((acc, opt) => acc + opt.votes, 0);
+
   const fetchFeed = async () => {
     try {
       setLoading(true);
       let url = '/api/posts';
-      if ((filter === 'star' || filter === 'free' || filter === 'ppv') && starCreator) {
+      if (filter === 'star' && starCreator) {
         url += `?creatorId=${starCreator.id}`;
       } else if (filter === 'subscribed') {
         url += '?filter=subscribed';
@@ -218,73 +248,277 @@ export default function FeedPage() {
           </div>
         )}
 
-        {/* Nicole Shayla Featured VIP Hero Banner */}
+        {/* Nicole Shayla Featured VIP Hero Banner (Fully Responsive & Luxury Styled) */}
         {starCreator && (
-          <div className="bg-gradient-to-r from-[#141926] via-[#1a1630] to-[#141926] border border-[#3b2b5c] rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-purple-600/15 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none"></div>
-            
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative z-10">
-              <div className="flex items-center gap-4 min-w-0">
+          <div className="bg-gradient-to-b from-[#161324] via-[#121622] to-[#0f121a] border border-[#3b2b5c] rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden space-y-4">
+            {/* Ambient background glow */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-purple-600/20 via-pink-500/10 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+
+            {/* Top Tier: Avatar + Creator Identity */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+              <div className="flex items-center gap-4">
                 <Link to={`/creator/${starCreator.username}`} className="relative group flex-shrink-0">
                   <img
                     src={starCreator.avatar}
                     alt={starCreator.name}
-                    className="w-20 h-20 rounded-2xl object-cover border-2 border-purple-500 shadow-xl group-hover:scale-105 transition-transform"
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover border-2 border-purple-500 shadow-2xl group-hover:scale-105 transition-transform"
                   />
-                  <span className="absolute -bottom-1 -right-1 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow">
+                  <span className="absolute -bottom-1 -right-1 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg">
                     ⭐ STAR
                   </span>
                 </Link>
 
-                <div className="min-w-0">
+                <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-lg sm:text-xl font-black text-white">{starCreator.name}</h2>
-                    <CheckCircle2 className="w-4 h-4 text-[#00aff0] fill-[#00aff0]/20 flex-shrink-0" />
-                    <span className="text-[10px] font-bold text-purple-300 bg-purple-950/60 px-2.5 py-0.5 rounded-full border border-purple-800/40">
+                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">{starCreator.name}</h2>
+                    <CheckCircle2 className="w-5 h-5 text-[#00aff0] fill-[#00aff0]/20 flex-shrink-0" />
+                    <span className="text-[10px] font-extrabold text-purple-300 bg-purple-950/70 px-2.5 py-0.5 rounded-full border border-purple-800/50">
                       Official VIP Hub
                     </span>
-                    <span className="text-xs text-gray-400">@{starCreator.username}</span>
                   </div>
 
-                  <p className="text-xs text-gray-200 mt-1 line-clamp-2 leading-relaxed">
-                    {starCreator.bio}
-                  </p>
-
-                  <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-400 flex-wrap">
-                    <span><strong className="text-white">{starCreator.subscriberCount?.toLocaleString() || '5,240'}</strong> VIP Fans</span>
-                    <span>•</span>
-                    <span><strong className="text-white">24</strong> 4K Tapes</span>
-                    <span>•</span>
-                    <span><strong className="text-cyan-400">${(starCreator.monthlyPrice || 60).toFixed(2)}</strong>/month</span>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+                    <span className="text-cyan-400 font-bold">@{starCreator.username}</span>
+                    <span>·</span>
+                    <span className="text-gray-300 font-medium">{starCreator.category}</span>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold text-[11px]">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      Online
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!isAuthenticated) return navigate('/signup?redirect=/');
-                    setActiveSubCreator(starCreator);
-                  }}
-                  className="px-5 py-2.5 bg-gradient-to-r from-[#00aff0] via-[#8b5cf6] to-[#ec4899] text-white font-black text-xs rounded-xl shadow-lg shadow-purple-500/25 hover:opacity-95 transition cursor-pointer text-center"
-                >
-                  Unlock Nicole's Feed (${(starCreator.monthlyPrice || 60).toFixed(2)}/mo)
-                </button>
-                <Link
-                  to={isAuthenticated ? `/messages?creator=${starCreator.id}&inquiry=subscribe` : '/signup?redirect=/messages'}
-                  className="px-4 py-2.5 bg-[#1b2336] hover:bg-[#25304a] border border-[#2b3956] text-white font-bold text-xs rounded-xl transition text-center flex items-center justify-center gap-1.5"
-                >
-                  <MessageSquare className="w-3.5 h-3.5 text-[#00aff0]" />
-                  <span>Message Nicole</span>
-                </Link>
-                <Link
-                  to={`/creator/${starCreator.username}`}
-                  className="px-4 py-2.5 bg-[#1b2336] hover:bg-[#25304a] border border-[#2b3956] text-gray-300 hover:text-white font-bold text-xs rounded-xl transition text-center"
-                >
-                  Full Profile
-                </Link>
+              {/* Direct Follow / Price Highlight */}
+              <div className="hidden sm:flex flex-col items-end flex-shrink-0">
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">VIP Subscription</span>
+                <span className="text-xl font-black text-white">
+                  ${(starCreator.monthlyPrice || 60).toFixed(2)}<span className="text-xs text-gray-400 font-normal"> / mo</span>
+                </span>
               </div>
+            </div>
+
+            {/* Bio Box */}
+            <div className="p-4 bg-[#0c1017]/80 border border-[#232b3f] rounded-2xl relative z-10">
+              <p className="text-xs sm:text-sm text-gray-100 leading-relaxed font-medium">
+                {starCreator.bio}
+              </p>
+            </div>
+
+            {/* 4-Item Responsive Stats Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 relative z-10 text-xs">
+              <div className="p-2.5 bg-[#141926] border border-[#242e44] rounded-xl flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center font-bold">👥</div>
+                <div>
+                  <p className="font-extrabold text-white text-xs sm:text-sm">{starCreator.subscriberCount?.toLocaleString() || '5,240'}</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-semibold">VIP Fans</p>
+                </div>
+              </div>
+
+              <div className="p-2.5 bg-[#141926] border border-[#242e44] rounded-xl flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center font-bold">🎬</div>
+                <div>
+                  <p className="font-extrabold text-white text-xs sm:text-sm">24</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-semibold">4K Tapes</p>
+                </div>
+              </div>
+
+              <div className="p-2.5 bg-[#141926] border border-[#242e44] rounded-xl flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center font-bold">⭐</div>
+                <div>
+                  <p className="font-extrabold text-white text-xs sm:text-sm">4.98 / 5.0</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-semibold">5.2k+ Reviews</p>
+                </div>
+              </div>
+
+              <div className="p-2.5 bg-[#141926] border border-[#242e44] rounded-xl flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold">💎</div>
+                <div>
+                  <p className="font-extrabold text-white text-xs sm:text-sm">${(starCreator.monthlyPrice || 60).toFixed(2)}/mo</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-semibold">Vault Access</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Dedicated Action Button Row (Full Width, Never Squeezed) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 relative z-10">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isAuthenticated) return navigate('/signup?redirect=/');
+                  setActiveSubCreator(starCreator);
+                }}
+                className="py-3 px-4 bg-gradient-to-r from-[#00aff0] via-[#8b5cf6] to-[#ec4899] text-white font-black text-xs sm:text-sm rounded-2xl shadow-xl shadow-purple-500/25 hover:opacity-95 transition cursor-pointer text-center flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4 fill-white flex-shrink-0" />
+                <span>Unlock Nicole's Feed (${(starCreator.monthlyPrice || 60).toFixed(2)}/mo)</span>
+              </button>
+
+              <Link
+                to={isAuthenticated ? `/messages?creator=${starCreator.id}&inquiry=subscribe` : '/signup?redirect=/messages'}
+                className="py-3 px-4 bg-[#1a2133] hover:bg-[#222b42] border border-[#2b3956] hover:border-[#00aff0] text-white font-bold text-xs sm:text-sm rounded-2xl transition text-center flex items-center justify-center gap-2"
+              >
+                <MessageSquare className="w-4 h-4 text-[#00aff0] flex-shrink-0" />
+                <span>Message Nicole (Direct DM)</span>
+              </Link>
+
+              <Link
+                to={`/creator/${starCreator.username}`}
+                className="py-3 px-4 bg-[#131722] hover:bg-[#1a2133] border border-[#242e44] text-gray-300 hover:text-white font-bold text-xs sm:text-sm rounded-2xl transition text-center flex items-center justify-center gap-2"
+              >
+                <Star className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <span>View Full Profile</span>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* VIP Story Highlights Shelf (Dedicated Media Channels) */}
+        {starCreator && (
+          <div className="bg-[#121622] border border-[#1f273d] rounded-2xl p-3.5 shadow-lg">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <span className="text-[11px] font-black uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                Nicole's VIP Story Vaults
+              </span>
+              <span className="text-[10px] text-gray-400 font-semibold">4 Channels</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {[
+                { title: "4K Solo Tapes", count: "12 Videos", icon: "🎬", tag: "Hot", bg: "from-pink-950/40 to-purple-900/20 border-pink-700/30", filterId: "video" },
+                { title: "Custom Requests", count: "8 Fulfilled", icon: "💎", tag: "VIP", bg: "from-purple-950/40 to-blue-900/20 border-purple-700/30", filterId: "ppv" },
+                { title: "Late Night Cam", count: "6 Archives", icon: "🌙", tag: "Exclusive", bg: "from-blue-950/40 to-cyan-900/20 border-blue-700/30", filterId: "star" },
+                { title: "Free Previews", count: "4 Teasers", icon: "🔥", tag: "Free", bg: "from-amber-950/40 to-orange-900/20 border-amber-700/30", filterId: "free" }
+              ].map((vault, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setFilter(vault.filterId)}
+                  className={`p-3 rounded-xl bg-gradient-to-br ${vault.bg} border hover:border-[#00aff0] transition text-left cursor-pointer group`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xl group-hover:scale-110 transition-transform">{vault.icon}</span>
+                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-black/50 text-cyan-300 border border-cyan-800/40">
+                      {vault.tag}
+                    </span>
+                  </div>
+                  <p className="font-extrabold text-white text-xs truncate">{vault.title}</p>
+                  <p className="text-[10px] text-gray-400">{vault.count}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Feature 4: Nicole's VIP Subscriber Poll & Content Request Vault */}
+        {starCreator && (
+          <div className="bg-[#121623] border border-cyan-900/30 rounded-3xl p-5 sm:p-6 shadow-2xl relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-xl bg-[#00aff0]/15 flex items-center justify-center text-sm font-bold text-[#00aff0]">
+                  🗳️
+                </span>
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base text-white flex items-center gap-2">
+                    <span>Nicole's VIP Production Poll</span>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-800/50 text-cyan-300">
+                      Live Fan Vote
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-gray-400">
+                    What exclusive 4K tape should Nicole film for next week's drop?
+                  </p>
+                </div>
+              </div>
+
+              <span className="text-[11px] font-bold text-gray-400 bg-[#0e121b] border border-[#1f2638] px-3 py-1 rounded-full self-start sm:self-auto">
+                {totalPollVotes.toLocaleString()} Votes Cast
+              </span>
+            </div>
+
+            {/* Poll Notification */}
+            {pollSuccessMsg && (
+              <div className="mb-3 p-3 bg-emerald-950/50 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span>{pollSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* Poll Options List */}
+            <div className="space-y-2.5 mb-4">
+              {pollOptions.map((opt) => {
+                const pct = Math.round((opt.votes / totalPollVotes) * 100);
+                const isSelected = votedOptionId === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleVote(opt.id)}
+                    className={`w-full relative overflow-hidden rounded-2xl p-3.5 text-left border transition cursor-pointer group ${
+                      isSelected
+                        ? 'border-[#00aff0] bg-[#162238]'
+                        : votedOptionId
+                        ? 'border-[#1f273d] bg-[#0f131d]'
+                        : 'border-[#1f273d] bg-[#141926] hover:border-gray-500 hover:bg-[#181f30]'
+                    }`}
+                  >
+                    {/* Progress Bar Fill */}
+                    {votedOptionId && (
+                      <div
+                        className={`absolute inset-y-0 left-0 transition-all duration-700 pointer-events-none ${
+                          isSelected ? 'bg-cyan-500/20' : 'bg-white/5'
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    )}
+
+                    <div className="relative z-10 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition ${
+                          isSelected
+                            ? 'border-[#00aff0] bg-[#00aff0] text-black font-black text-xs'
+                            : 'border-gray-600 bg-transparent group-hover:border-gray-400'
+                        }`}>
+                          {isSelected ? '✓' : ''}
+                        </div>
+                        <span className={`text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-white' : 'text-gray-200'}`}>
+                          {opt.title}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-shrink-0 text-xs">
+                        <span className="text-[10px] text-gray-400 font-semibold hidden sm:inline">
+                          {opt.tag}
+                        </span>
+                        {votedOptionId && (
+                          <span className={`font-black text-xs ${isSelected ? 'text-cyan-300' : 'text-gray-400'}`}>
+                            {pct}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Bottom Info & Custom DM Request CTA */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[#1c2235] text-xs">
+              <span className="text-[11px] text-gray-400">
+                {votedOptionId 
+                  ? "✓ Thank you for voting! Results are factored into Nicole's Friday release schedule." 
+                  : "Click any option above to cast your fan vote. One vote per member."
+                }
+              </span>
+
+              <Link
+                to={`/messages?creator=${starCreator.id}&inquiry=custom_scene`}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-amber-200 transition"
+              >
+                <span>💬 Have a specific scene idea? Request Custom DM</span>
+                <span>→</span>
+              </Link>
             </div>
           </div>
         )}
@@ -292,10 +526,10 @@ export default function FeedPage() {
         {/* Feed Filters Bar */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {[
+            { id: 'all', label: "🌐 All Models (Live Feed)", icon: Sparkles },
             { id: 'star', label: "⭐ Nicole's Vault", icon: Sparkles },
             { id: 'free', label: "🎬 Free Teasers", icon: Video },
             { id: 'ppv', label: "💎 Premium PPV", icon: Lock },
-            { id: 'community', label: "🌐 Guest Creators", icon: Users },
             { id: 'subscribed', label: "🔒 Subscribed", icon: CheckCircle2 }
           ].map((tab) => {
             const Icon = tab.icon;

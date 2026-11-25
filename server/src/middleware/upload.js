@@ -58,14 +58,15 @@ const fileFilter = (req, file, cb) => {
   return cb(error, false);
 };
 
-// Size limit: 150MB
-const MAX_VIDEO_SIZE = 150 * 1024 * 1024; // 150MB in bytes
+// Size limit: 1GB (1024MB) for full-length 4K uncut creator video uploads
+const MAX_VIDEO_SIZE = 1024 * 1024 * 1024; // 1GB in bytes
 
 export const videoUpload = multer({
   storage,
   fileFilter,
   limits: {
     fileSize: MAX_VIDEO_SIZE,
+    fieldSize: 50 * 1024 * 1024, // 50MB for base64 thumbnails and metadata
     files: 1
   }
 });
@@ -80,7 +81,7 @@ export const handleVideoUpload = (fieldName = 'video') => {
         if (err.code === 'LIMIT_FILE_SIZE') {
           return res.status(400).json({
             success: false,
-            message: 'Video file size exceeds the 150MB limit. Please upload a compressed or shorter clip.'
+            message: 'Video file size exceeds the 1GB limit. Please upload a compressed or shorter clip.'
           });
         }
         if (err.code === 'LIMIT_UNEXPECTED_FILE') {

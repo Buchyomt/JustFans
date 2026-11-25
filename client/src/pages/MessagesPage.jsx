@@ -48,19 +48,29 @@ export default function MessagesPage() {
       const res = await authFetch('/api/messages');
       const data = await res.json();
       if (data.success && data.threads) {
-        setThreads(data.threads);
+        // Sort threads: prioritize threads with tips if currentUser is creator
+        let sorted = [...data.threads];
+        if (currentUser?.role === 'creator') {
+          sorted.sort((a, b) => {
+            const aHasTip = a.messages?.some(m => m.tip > 0) ? 1 : 0;
+            const bHasTip = b.messages?.some(m => m.tip > 0) ? 1 : 0;
+            if (bHasTip !== aHasTip) return bHasTip - aHasTip;
+            return new Date(b.lastTimestamp || 0) - new Date(a.lastTimestamp || 0);
+          });
+        }
+        setThreads(sorted);
 
         // Determine active thread
-        if (data.threads.length > 0) {
+        if (sorted.length > 0) {
           let target = null;
           if (creatorParam) {
-            target = data.threads.find(t => 
+            target = sorted.find(t => 
               t.creatorId === creatorParam || 
               t.partner?.id === creatorParam || 
               t.partner?.username === creatorParam
             );
           }
-          setActiveThread(target || data.threads[0]);
+          setActiveThread(target || sorted[0]);
         } else {
           // Fallback initial thread with Nicole Shayla if list is empty
           const fallbackThread = {
@@ -79,7 +89,7 @@ export default function MessagesPage() {
               {
                 id: 'm-welcome',
                 senderId: 'creator-1',
-                text: "Hey babe! 💕 Welcome to my exclusive VIP chat. If you're looking to subscribe ($60/mo) and unlock my full uncut 4K video vault, message me right here to get my approved CashApp, PayPal, Zelle, or Crypto details! 😈",
+                text: "Hey babe! 💕 Welcome to my exclusive VIP chat. If you're looking to subscribe ($60/mo) and unlock my full uncut 4K video vault, message me right here to get my approved CashApp, Gift Cards, or Crypto details! 😈",
                 timestamp: new Date().toISOString()
               }
             ]
@@ -252,37 +262,48 @@ export default function MessagesPage() {
                 </button>
               </div>
             ) : (
-              threads.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setActiveThread(t)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition cursor-pointer ${
-                    activeThread?.id === t.id 
-                      ? 'bg-[#1e273b] border border-[#00aff0]/40 shadow-sm' 
-                      : 'hover:bg-[#161c2b] border border-transparent'
-                  }`}
-                >
-                  <img
-                    src={t.partner?.avatar || (t.partner?.id === 'creator-1' ? '/FhNtifmVQAEZDgwy.jpg' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100')}
-                    alt={t.partner?.name || "User"}
-                    className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-500/50 flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <p className="text-xs font-bold text-white truncate flex items-center gap-1">
-                        {t.partner?.name}
-                        {t.partner?.verified && <CheckCircle2 className="w-3 h-3 text-[#00aff0] flex-shrink-0" />}
-                      </p>
-                      <span className="text-[10px] text-gray-500">
-                        {t.lastTimestamp ? new Date(t.lastTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                      </span>
+              threads.map((t) => {
+                const hasTip = t.messages?.some(m => m.tip > 0);
+                const tipSum = t.messages?.reduce((s, m) => s + (Number(m.tip) || 0), 0) || 0;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveThread(t)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition cursor-pointer relative ${
+                      activeThread?.id === t.id 
+                        ? 'bg-[#1e273b] border border-[#00aff0]/40 shadow-sm' 
+                        : 'hover:bg-[#161c2b] border border-transparent'
+                    }`}
+                  >
+                    <img
+                      src={t.partner?.avatar || (t.partner?.id === 'creator-1' ? '/FhNtifmVQAEZDgwy.jpg' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100')}
+                      alt={t.partner?.name || "User"}
+                      className="w-12 h-12 rounded-2xl object-cover border-2 border-purple-500/50 flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <p className="text-xs font-bold text-white truncate flex items-center gap-1">
+                          {t.partner?.name}
+                          {t.partner?.verified && <CheckCircle2 className="w-3 h-3 text-[#00aff0] flex-shrink-0" />}
+                        </p>
+                        <span className="text-[10px] text-gray-500">
+                          {t.lastTimestamp ? new Date(t.lastTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {hasTip && (
+                          <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 flex-shrink-0">
+                            🔥 Tipped ${tipSum}
+                          </span>
+                        )}
+                        <p className="text-[11px] text-gray-400 truncate">
+                          {t.lastMessage}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-gray-400 truncate">
-                      {t.lastMessage}
-                    </p>
-                  </div>
-                </button>
-              ))
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
@@ -357,7 +378,7 @@ export default function MessagesPage() {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
                   <span className="font-semibold text-white">Accepted:</span>
-                  <span className="text-[11px] text-gray-400">CashApp ($NicoleShaylaVIP) · PayPal · Zelle · Crypto</span>
+                  <span className="text-[11px] text-gray-400">CashApp · Gift Cards (Apple / Steam / Amazon / Visa) · Crypto (USDT/BTC)</span>
                 </div>
                 <span className="text-[10px] font-bold text-cyan-300 bg-cyan-950/70 border border-cyan-800/40 px-2 py-0.5 rounded-full flex-shrink-0">
                   $60.00 / month VIP
@@ -425,7 +446,7 @@ export default function MessagesPage() {
                             isMe 
                               ? 'bg-gradient-to-r from-[#00aff0] to-[#0094cc] text-black font-medium rounded-tr-none' 
                               : 'bg-[#1b2233] text-gray-100 border border-[#2b364e] rounded-tl-none'
-                          }`}
+                          } ${msg.tip > 0 ? 'border-2 border-amber-400 shadow-xl shadow-amber-500/20' : ''}`}
                         >
                           <p>{msg.text}</p>
                         </div>
@@ -461,10 +482,10 @@ export default function MessagesPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setInputText("Hey Nicole! I sent $60 via Zelle. My payment email/name is: ")}
+                  onClick={() => setInputText("Hey Nicole! I got a $60 Gift Card (Apple/Steam/Amazon/Visa) for VIP access. The code is: ")}
                   className="px-2.5 py-1 bg-[#1a2133] hover:bg-[#252f47] text-purple-300 text-[11px] font-semibold rounded-full border border-purple-800/40 whitespace-nowrap transition cursor-pointer"
                 >
-                  📱 Sent via Zelle
+                  🎁 Sent Gift Card
                 </button>
                 <button
                   type="button"
@@ -476,13 +497,52 @@ export default function MessagesPage() {
               </div>
             )}
 
+            {/* Priority DM Tips Selector Bar */}
+            {!isCreatorSelf && (
+              <div className="px-3 sm:px-4 py-1.5 bg-[#10141f] border-t border-[#1f2638] flex items-center justify-between text-xs gap-2">
+                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1 flex-shrink-0">
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    Priority DM:
+                  </span>
+                  {[
+                    { label: "+$5 Quick Reply", val: "5" },
+                    { label: "+$10 Priority Pin", val: "10" },
+                    { label: "+$25 Video Request", val: "25" }
+                  ].map(chip => (
+                    <button
+                      key={chip.val}
+                      type="button"
+                      onClick={() => setTipAmount(tipAmount === chip.val ? '' : chip.val)}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                        tipAmount === chip.val 
+                          ? 'bg-amber-400 text-black border-amber-400 shadow-md shadow-amber-500/20' 
+                          : 'bg-[#181f30] hover:bg-[#202940] text-amber-300 border-amber-700/40'
+                      }`}
+                    >
+                      <span>{chip.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {tipAmount && (
+                  <button
+                    type="button"
+                    onClick={() => setTipAmount('')}
+                    className="text-[10px] text-gray-400 hover:text-rose-400 font-semibold cursor-pointer flex-shrink-0"
+                  >
+                    Clear (${tipAmount})
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Tip In Chat Dropdown */}
             {showTipBox && (
               <div className="p-3 bg-[#111622] border-t border-[#1f2638] flex items-center gap-3">
                 <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
-                  <DollarSign className="w-3.5 h-3.5" /> Attach Tip:
+                  <DollarSign className="w-3.5 h-3.5" /> Attach Custom Tip:
                 </span>
-                {['5', '10', '25'].map(val => (
+                {['5', '10', '25', '50'].map(val => (
                   <button
                     key={val}
                     type="button"
@@ -508,18 +568,24 @@ export default function MessagesPage() {
             <form onSubmit={handleSendMessage} className="p-3 sm:p-4 border-t border-[#1f2638] bg-[#0e121b] flex items-center gap-2">
               <input
                 type="text"
-                placeholder={tipAmount ? `Send message with $${tipAmount} tip...` : "Write a message to Nicole..."}
+                placeholder={tipAmount ? `🔥 Send priority message with $${tipAmount} tip to Nicole...` : "Write a message to Nicole..."}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                className="flex-1 bg-[#161c2b] border border-[#273148] rounded-2xl px-4 py-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#00aff0]"
+                className={`flex-1 bg-[#161c2b] border rounded-2xl px-4 py-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none ${
+                  tipAmount ? 'border-amber-500/70 shadow-sm shadow-amber-500/20' : 'border-[#273148] focus:border-[#00aff0]'
+                }`}
               />
               <button
                 type="submit"
                 disabled={sending || (!inputText.trim() && !tipAmount)}
-                className="px-5 py-3 bg-[#00aff0] disabled:opacity-40 hover:bg-[#0094cc] text-black font-extrabold text-xs sm:text-sm rounded-2xl flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/20 transition cursor-pointer flex-shrink-0"
+                className={`px-5 py-3 disabled:opacity-40 font-extrabold text-xs sm:text-sm rounded-2xl flex items-center justify-center gap-1.5 shadow-lg transition cursor-pointer flex-shrink-0 ${
+                  tipAmount 
+                    ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black shadow-amber-500/25' 
+                    : 'bg-[#00aff0] hover:bg-[#0094cc] text-black shadow-cyan-500/20'
+                }`}
               >
                 <Send className="w-4 h-4" />
-                <span className="hidden sm:inline">Send</span>
+                <span className="hidden sm:inline">{tipAmount ? `Tip & Send` : `Send`}</span>
               </button>
             </form>
 

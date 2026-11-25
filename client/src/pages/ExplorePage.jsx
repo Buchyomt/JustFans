@@ -21,10 +21,10 @@ export default function ExplorePage() {
 
   const categories = [
     'All',
-    'Fitness & Wellness',
-    'Music & Production',
-    'Digital Art & 3D',
-    'Tech & Gaming'
+    'Trans & TS Goddesses',
+    'Trans & Solo VIP',
+    'Cosplay & Alt Glamour',
+    'GFE & Intimate Solos'
   ];
 
   const fetchCreators = async () => {
@@ -61,10 +61,10 @@ export default function ExplorePage() {
             <span>Discover Top Creators</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight mb-2">
-            Explore <span className="text-[#00aff0]">Exclusive Channels</span>
+            Explore <span className="text-[#00aff0]">Exclusive Creator Channels</span>
           </h1>
           <p className="text-sm text-gray-300 leading-relaxed mb-6">
-            Directly support world-class fitness coaches, music producers, 3D digital sculptors, and tech streamers with zero intermediary algorithms.
+            Directly subscribe and support top female and trans content creators with uncensored 4K video vaults, private DMs, and exclusive solo content.
           </p>
 
           {/* Search bar inside header */}
