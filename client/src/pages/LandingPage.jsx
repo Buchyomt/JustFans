@@ -86,6 +86,77 @@ export default function LandingPage() {
   return (
     <div className="flex-1 w-full bg-[#0b0e14] text-slate-100 overflow-x-hidden">
       
+      {/* Standalone Dedicated Landing Navigation Bar */}
+      <header className="sticky top-0 z-50 bg-[#0b0e14]/90 backdrop-blur-md border-b border-[#1f2638] px-4 sm:px-8 py-3.5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Brand Logo & Adult Gate Tag */}
+          <div className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#00aff0] to-[#8b5cf6] p-0.5 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+                <div className="w-full h-full bg-[#0b0e14] rounded-[10px] flex items-center justify-center">
+                  <Star className="w-4 h-4 text-[#00aff0] fill-[#00aff0]" />
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-lg font-black tracking-wider text-white">
+                  JUST<span className="text-[#00aff0]">FANS</span>
+                </span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-pink-400">
+                  Trans & VIP Network
+                </span>
+              </div>
+            </Link>
+
+            <span className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-950/60 border border-pink-700/40 text-[10px] font-black text-pink-300 uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping"></span>
+              18+ Adults Only
+            </span>
+          </div>
+
+          {/* Quick Anchor Navigation */}
+          <nav className="hidden lg:flex items-center gap-6 text-xs font-bold text-gray-300">
+            <a href="#models" className="hover:text-[#00aff0] transition">⭐ Star Models</a>
+            <a href="#how-it-works" className="hover:text-purple-400 transition">⚡ How It Works</a>
+            <a href="#perks" className="hover:text-pink-400 transition">💎 VIP Perks</a>
+          </nav>
+
+          {/* Action CTAs */}
+          <div className="flex items-center gap-2.5">
+            {isAuthenticated ? (
+              <Link
+                to="/feed"
+                className="px-5 py-2.5 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-black font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 shadow-md hover:opacity-95 transition"
+              >
+                <span>Enter Social Feed</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/feed"
+                  className="px-4 py-2 bg-[#141b2b] hover:bg-[#1a2338] border border-[#263552] text-[#00aff0] font-extrabold text-xs sm:text-sm rounded-xl transition flex items-center gap-1.5"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Browse</span> Feed
+                </Link>
+                <Link
+                  to="/login"
+                  className="px-3.5 py-2 bg-[#1a2133] hover:bg-[#252f47] border border-[#2b354e] text-white font-bold text-xs sm:text-sm rounded-xl transition"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/signup"
+                  className="px-4 py-2 bg-gradient-to-r from-[#00aff0] to-[#8b5cf6] text-black font-extrabold text-xs sm:text-sm rounded-xl shadow-md hover:opacity-95 transition"
+                >
+                  Join Free
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
       {/* Logged In Quick Notification Banner */}
       {isAuthenticated && currentUser && (
         <div className="bg-gradient-to-r from-cyan-950/80 via-[#131b2e] to-purple-950/80 border-b border-[#212f4d] py-2 px-4 text-xs flex items-center justify-between">
@@ -176,7 +247,7 @@ export default function LandingPage() {
       </section>
 
       {/* Featured Star Models Roster */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section id="models" className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
             <div className="inline-flex items-center gap-2 text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">
@@ -260,7 +331,7 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works Section (The Core Social Media + Timed Video Pass Concept) */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-[#0e131e]/70 border-y border-[#1f2a40]">
+      <section id="how-it-works" className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-[#0e131e]/70 border-y border-[#1f2a40] scroll-mt-20">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-2 text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">
             <Zap className="w-4 h-4 text-cyan-400" />
@@ -318,7 +389,7 @@ export default function LandingPage() {
       </section>
 
       {/* Platform Security & Watermarking Highlights */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section id="perks" className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20">
         <div className="bg-gradient-to-r from-[#17142b] via-[#121626] to-[#111c2e] border border-purple-800/40 rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
             <div>
@@ -362,7 +433,7 @@ export default function LandingPage() {
               </div>
               <div className="relative aspect-video rounded-2xl overflow-hidden bg-black flex items-center justify-center">
                 <img
-                  src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&auto=format&fit=crop&q=80"
+                  src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&auto=format&fit=crop&q=80"
                   alt="Player Preview"
                   className="w-full h-full object-cover filter blur-[2px] opacity-70"
                 />
