@@ -21,7 +21,7 @@ export default class ErrorBoundary extends React.Component {
       localStorage.clear();
       sessionStorage.clear();
     } catch (_e) {}
-    window.location.href = '/';
+    window.location.reload();
   };
 
   render() {
