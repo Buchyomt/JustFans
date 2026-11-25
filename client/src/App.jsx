@@ -9,6 +9,7 @@ import LandingPage from './pages/LandingPage';
 import ExplorePage from './pages/ExplorePage';
 import CreatorProfilePage from './pages/CreatorProfilePage';
 import CreatorStudioPage from './pages/CreatorStudioPage';
+import MessagesPage from './pages/MessagesPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import BookmarksPage from './pages/BookmarksPage';
 import ProfilePage from './pages/ProfilePage';
