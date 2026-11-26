@@ -59,14 +59,19 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Mount Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/creators', creatorsRoutes);
-app.use('/api/posts', postsRoutes);
-app.use('/api/subscriptions', subscriptionsRoutes);
-app.use('/api/messages', messagesRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/videos', videosRoutes);
+// Mount Routes (supporting both /api/* and /* for Vercel Serverless Function compatibility)
+const mountRoutes = (prefix = '') => {
+  app.use(`${prefix}/auth`, authRoutes);
+  app.use(`${prefix}/creators`, creatorsRoutes);
+  app.use(`${prefix}/posts`, postsRoutes);
+  app.use(`${prefix}/subscriptions`, subscriptionsRoutes);
+  app.use(`${prefix}/messages`, messagesRoutes);
+  app.use(`${prefix}/analytics`, analyticsRoutes);
+  app.use(`${prefix}/videos`, videosRoutes);
+};
+
+mountRoutes('/api');
+mountRoutes('');
 
 // SPA Client Routing fallback (serves index.html for browser routes if client is built)
 if (fs.existsSync(clientDistPath)) {

@@ -81,8 +81,12 @@ export const AuthProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      const data = await res.json();
-      return data;
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { success: false, message: 'Server returned an invalid response. If using Vercel, ensure Root Directory is set to ./' };
+      }
     } catch {
       return { success: false, message: 'Could not connect to verification service.' };
     }
@@ -96,7 +100,13 @@ export const AuthProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code })
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        return { success: false, message: 'Invalid response from verification server.' };
+      }
       if (data.success && data.token) {
         localStorage.setItem(TOKEN_KEY, data.token);
         setToken(data.token);
