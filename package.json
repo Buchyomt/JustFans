@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Full-stack creator subscription and video platform for trans models and fans",
   "scripts": {
-    "build": "npm --prefix client install && npm --prefix client run build",
+    "build": "npm --prefix client install && npm --prefix client run build && node -e \"const fs=require('fs'); if(fs.existsSync('client/dist')) fs.cpSync('client/dist', 'dist', {recursive:true});\"",
     "start": "node server/src/index.js",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",

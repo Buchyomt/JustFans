@@ -3,6 +3,12 @@ import { connectDB } from '../server/src/config/db.js';
 
 let isConnected = false;
 
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 export default async function handler(req, res) {
   if (!isConnected) {
     try {
