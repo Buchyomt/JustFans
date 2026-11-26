@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { extractVideoFrames, formatVideoTime } from '../utils/videoThumbnails';
 import { 
   Heart, 
@@ -59,6 +60,8 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
 
   // Edit Post Modal States
   const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editTitle, setEditTitle] = useState(post.title);
   const [editCaption, setEditCaption] = useState(post.caption || '');
   const [editMediaUrl, setEditMediaUrl] = useState(post.mediaUrl || '');
@@ -185,19 +188,22 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
     currentUser.role === 'admin'
   );
 
-  const handleDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete "${postData.title}"?`)) return;
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
     try {
       const res = await authFetch(`/api/posts/${postData.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
+        setShowDeleteModal(false);
         if (onDelete) onDelete(postData.id);
       } else {
         alert(data.message || 'Failed to delete post');
       }
     } catch (err) {
       console.error('Delete error:', err);
-      alert('Failed to delete post.');
+      alert('Network error while deleting post.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -314,7 +320,7 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
                 </button>
                 <button
                   type="button"
-                  onClick={handleDelete}
+                  onClick={() => setShowDeleteModal(true)}
                   title="Delete post"
                   className="p-1.5 text-gray-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-xl transition cursor-pointer"
                 >
@@ -759,6 +765,16 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
           </div>
         </div>
       )}
+      {/* Professional Deletion Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Post Permanently?"
+        itemName={postData.title}
+        itemType="post"
+        isLoading={isDeleting}
+      />
     </>
   );
 }

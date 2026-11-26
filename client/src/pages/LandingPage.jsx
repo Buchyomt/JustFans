@@ -34,7 +34,7 @@ export default function LandingPage() {
       category: "Trans & Solo VIP",
       price: 60.00,
       avatar: "/FhNtifmVQAEZDgwy.jpg",
-      banner: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=1200&auto=format&fit=crop&q=80",
+      banner: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&auto=format&fit=crop&q=80",
       bio: "23 y trans girl & anal queen of your dreams 💦 Uncensored 4K solo vault, bedroom tapes, and priority 1-on-1 private DMs.",
       fans: "5,240 VIP Fans",
       tapes: "24 4K Tapes"
@@ -76,7 +76,7 @@ export default function LandingPage() {
       category: "Cosplay & Alt Glamour",
       price: 30.00,
       avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&auto=format&fit=crop&q=80",
-      banner: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=1200&auto=format&fit=crop&q=80",
+      banner: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1200&auto=format&fit=crop&q=80",
       bio: "21y Petite E-Girl & Alt Model 💕 4K anime & gaming cosplay try-ons, teasing solo sessions, and private snapchat access.",
       fans: "3,670 VIP Fans",
       tapes: "18 4K Sets"
@@ -242,6 +242,138 @@ export default function LandingPage() {
           <div className="p-3 text-center border-l border-[#1f283d]">
             <p className="text-xl sm:text-2xl font-black text-emerald-400">Discrete</p>
             <p className="text-[11px] text-gray-400 font-semibold uppercase">CashApp / Crypto</p>
+          </div>
+        </div>
+      </section>
+
+      {/* 🔞 18+ Live Vault Reel (Uncensored Teasers & 4K Drops) */}
+      <section className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="bg-gradient-to-r from-[#171326] via-[#101421] to-[#151224] border border-pink-900/40 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-pink-500"></span>
+              </span>
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                  <span>🔞 18+ Uncensored 4K Vault Drops</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-pink-950/80 border border-pink-700/50 text-pink-300">
+                    Explicit Teasers
+                  </span>
+                </h3>
+                <p className="text-xs text-gray-400">
+                  Real uncut 4K video previews from verified trans models. Unlock instant full-length playback in the feed.
+                </p>
+              </div>
+            </div>
+
+            <Link
+              to="/feed"
+              className="self-start sm:self-auto px-4 py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-pink-600/25 flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <span>Watch in Live Feed</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* 4K Media Teaser Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                title: "Midnight Silk Robe & Bedroom Solo",
+                creator: "Nicole Shayla ⭐",
+                category: "4K Solo Vault",
+                duration: "38:45",
+                badge: "🔞 18+ RAW",
+                price: "$18.66 PPV",
+                image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&auto=format&fit=crop&q=80",
+                views: "4.8k views"
+              },
+              {
+                title: "Wet Shower Cam & Oil Solo Session",
+                creator: "Chloe Rose 🏳️‍⚧️",
+                category: "TS Goddess",
+                duration: "24:10",
+                badge: "💦 UNCENSORED",
+                price: "VIP All-Access",
+                image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80",
+                views: "3.2k views"
+              },
+              {
+                title: "POV Girlfriend Late Night Tease",
+                creator: "Maya Lin 🏳️‍⚧️💋",
+                category: "Intimate POV",
+                duration: "29:50",
+                badge: "💋 POV SOLO",
+                price: "$15.00 PPV",
+                image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop&q=80",
+                views: "2.9k views"
+              },
+              {
+                title: "Full-Length 4K Anal Queen Tape",
+                creator: "Nicole Shayla ⭐",
+                category: "Uncut Release",
+                duration: "42:20",
+                badge: "🔥 UNCUT 4K",
+                price: "$24.50 PPV",
+                image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&auto=format&fit=crop&q=80",
+                views: "5.6k views"
+              }
+            ].map((vaultItem, i) => (
+              <div
+                key={i}
+                className="bg-[#0b0e14]/90 border border-[#222b3f] hover:border-pink-500/60 rounded-2xl overflow-hidden shadow-xl transition-all duration-300 group flex flex-col justify-between"
+              >
+                <div className="relative aspect-video w-full overflow-hidden bg-black">
+                  <img
+                    src={vaultItem.image}
+                    alt={vaultItem.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 flex items-center justify-center">
+                    <Link
+                      to="/feed"
+                      className="w-11 h-11 rounded-full bg-pink-600/90 group-hover:bg-pink-500 text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition cursor-pointer"
+                    >
+                      <Video className="w-5 h-5 fill-white ml-0.5" />
+                    </Link>
+                  </div>
+                  <span className="absolute top-2 left-2 px-2 py-0.5 bg-black/80 text-[9px] font-black text-pink-400 rounded-md border border-pink-500/30">
+                    {vaultItem.badge}
+                  </span>
+                  <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/85 text-[10px] font-bold text-gray-200 rounded">
+                    {vaultItem.duration}
+                  </span>
+                </div>
+
+                <div className="p-3.5 space-y-2 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] text-gray-400 font-semibold mb-1">
+                      <span className="text-cyan-400 font-bold">{vaultItem.creator}</span>
+                      <span>{vaultItem.views}</span>
+                    </div>
+                    <h4 className="text-xs font-black text-white group-hover:text-pink-300 transition line-clamp-1">
+                      {vaultItem.title}
+                    </h4>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-[#1c2436] text-xs">
+                    <span className="text-[11px] font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/40">
+                      {vaultItem.price}
+                    </span>
+                    <Link
+                      to="/feed"
+                      className="text-[11px] font-black text-pink-400 hover:text-pink-300 flex items-center gap-1 transition"
+                    >
+                      <span>Unlock</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

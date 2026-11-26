@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import { extractVideoFrames, extractSingleFrameAtTime, formatVideoTime } from '../utils/videoThumbnails';
 import { 
   DollarSign, 
@@ -65,6 +66,8 @@ export default function CreatorStudioPage() {
   // VIP Codes & Subscribers List states
   const [vipCodes, setVipCodes] = useState([]);
   const [subscribersList, setSubscribersList] = useState([]);
+  const [deleteTargetVideo, setDeleteTargetVideo] = useState(null);
+  const [isDeletingVideo, setIsDeletingVideo] = useState(false);
   const [customNewCode, setCustomNewCode] = useState('');
   const [newCodeTier, setNewCodeTier] = useState('Standard Fan');
   const [newCodePrice, setNewCodePrice] = useState('60.00');
@@ -181,23 +184,25 @@ export default function CreatorStudioPage() {
     }
   };
 
-  const handleDeleteVideo = async (vidId, vidTitle) => {
-    if (!window.confirm(`Are you sure you want to delete "${vidTitle}"? This will delete the raw video file and remove its post from the feed.`)) {
-      return;
-    }
+  const handleConfirmDeleteVideo = async () => {
+    if (!deleteTargetVideo) return;
+    setIsDeletingVideo(true);
     try {
-      const res = await authFetch(`/api/videos/${vidId}`, { method: 'DELETE' });
+      const res = await authFetch(`/api/videos/${deleteTargetVideo.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        setUploadedVideos(prev => prev.filter(v => v.id !== vidId));
-        if (previewVideo?.id === vidId) setPreviewVideo(null);
+        setUploadedVideos(prev => prev.filter(v => v.id !== deleteTargetVideo.id));
+        if (previewVideo?.id === deleteTargetVideo.id) setPreviewVideo(null);
         fetchAnalytics();
+        setDeleteTargetVideo(null);
       } else {
         alert(data.message || 'Failed to delete video');
       }
     } catch (err) {
       console.error('Delete error:', err);
-      alert('Failed to delete video.');
+      alert('Network error while deleting video.');
+    } finally {
+      setIsDeletingVideo(false);
     }
   };
 
@@ -833,7 +838,7 @@ export default function CreatorStudioPage() {
                         {(currentUser?.id === vid.uploaderId || currentUser?.role === 'admin') && (
                           <button
                             type="button"
-                            onClick={() => handleDeleteVideo(vid.id, vid.title)}
+                            onClick={() => setDeleteTargetVideo(vid)}
                             title="Delete video file and feed post"
                             className="p-1.5 text-gray-400 hover:text-rose-400 hover:bg-rose-950/40 rounded-xl border border-transparent hover:border-rose-900/40 transition cursor-pointer"
                           >
@@ -1108,6 +1113,17 @@ export default function CreatorStudioPage() {
         </div>
 
       </div>
+
+      {/* Professional Deletion Modal */}
+      <ConfirmDeleteModal
+        isOpen={Boolean(deleteTargetVideo)}
+        onClose={() => setDeleteTargetVideo(null)}
+        onConfirm={handleConfirmDeleteVideo}
+        title="Delete Video File Permanently?"
+        itemName={deleteTargetVideo?.title}
+        itemType="video"
+        isLoading={isDeletingVideo}
+      />
 
     </div>
   );
