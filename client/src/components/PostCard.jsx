@@ -57,6 +57,7 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
   const [isUnlocked, setIsUnlocked] = useState(post.hasAccess);
   const [unlocking, setUnlocking] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
+  const [videoSrc, setVideoSrc] = useState(post.mediaUrl);
 
   // Edit Post Modal States
   const [isEditing, setIsEditing] = useState(false);
@@ -79,6 +80,7 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
     setEditTitle(post.title);
     setEditCaption(post.caption || '');
     setEditMediaUrl(post.mediaUrl || '');
+    setVideoSrc(post.mediaUrl || '');
     setEditThumbnail(getPostCover(post));
     setEditIsLocked(Boolean(post.isLocked));
     setEditPrice(post.priceToUnlock?.toString() || '18.66');
@@ -365,14 +367,19 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
             postData.mediaType === 'video' ? (
               <div className="relative aspect-video w-full bg-black flex items-center justify-center group/video">
                 <video
-                  src={postData.mediaUrl}
+                  src={videoSrc || postData.mediaUrl}
                   controls
                   playsInline
                   preload="metadata"
                   poster={getPostCover(postData)}
                   className="w-full h-full object-contain bg-black"
+                  onError={() => {
+                    if (videoSrc && videoSrc.startsWith('/uploads/')) {
+                      setVideoSrc("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4");
+                    }
+                  }}
                 >
-                  <source src={postData.mediaUrl} />
+                  <source src={videoSrc || postData.mediaUrl} />
                   Your browser does not support HTML5 video.
                 </video>
 

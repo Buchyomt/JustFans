@@ -224,16 +224,18 @@ export default function AuthPage({ initialMode = 'login' }) {
             client_id: activeClientId,
             callback: handleGoogleCredentialResponse,
             auto_select: false,
-            cancel_on_tap_outside: true
+            cancel_on_tap_outside: true,
+            use_fedcm_for_prompt: false
           });
 
           const container = document.getElementById('nativeGoogleBtnContainer');
           if (container) {
             container.innerHTML = '';
+            const btnWidth = Math.min(340, Math.max(220, window.innerWidth - 64));
             window.google.accounts.id.renderButton(container, {
               theme: 'outline',
               size: 'large',
-              width: 360,
+              width: btnWidth,
               text: mode === 'login' ? 'signin_with' : 'signup_with',
               shape: 'pill',
               logo_alignment: 'left'

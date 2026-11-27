@@ -1,5 +1,33 @@
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 import { mockUsers } from '../data/mockData.js';
+
+// Mongoose Persistent Schema for MongoDB Atlas
+const UserSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  passwordHash: { type: String },
+  createdAt: { type: String, default: () => new Date().toISOString() },
+  name: { type: String },
+  role: { type: String, default: 'fan' },
+  avatar: { type: String },
+  bio: { type: String },
+  walletBalance: { type: Number, default: 50.00 },
+  following: { type: [String], default: [] },
+  subscriptions: { type: [Object], default: [] },
+  bookmarks: { type: [String], default: [] },
+  category: { type: String },
+  subscriberCount: { type: Number, default: 0 },
+  postCount: { type: Number, default: 0 },
+  likeCount: { type: Number, default: 0 },
+  monthlyPrice: { type: Number, default: 60.00 },
+  vipPrice: { type: Number, default: 99.00 },
+  verified: { type: Boolean, default: false },
+  tiers: { type: [Object], default: [] }
+}, { timestamps: true });
+
+export const MongoUser = mongoose.models.User || mongoose.model('User', UserSchema);
 
 // Default demo password hash for 'password123' (10 salt rounds)
 const DEFAULT_DEMO_HASH = "$2a$10$w09ZkF.9oG07q9OtiR6x4u799Pkyx1hA39D93k2v78VvVp004fA7S";
@@ -98,11 +126,21 @@ class UserModel {
     };
 
     this.users.push(newUser);
+
+    // Persist directly to MongoDB Atlas if connected
+    if (mongoose.connection.readyState >= 1) {
+      try {
+        await MongoUser.create(newUser);
+      } catch (err) {
+        console.error('[MongoUser Save Notice]:', err.message);
+      }
+    }
+
     return newUser;
   }
 
   // Update existing user profile fields
-  update(id, updates = {}) {
+  async update(id, updates = {}) {
     const user = this.findById(id);
     if (!user) return null;
 
@@ -112,6 +150,16 @@ class UserModel {
         user[key] = updates[key];
       }
     }
+
+    // Persist directly to MongoDB Atlas if connected
+    if (mongoose.connection.readyState >= 1) {
+      try {
+        await MongoUser.updateOne({ id }, { $set: updates });
+      } catch (err) {
+        console.error('[MongoUser Update Notice]:', err.message);
+      }
+    }
+
     return user;
   }
 
