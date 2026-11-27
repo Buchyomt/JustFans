@@ -1,16 +1,35 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure upload directory exists: server/uploads/videos
-export const UPLOAD_DIR = path.resolve(__dirname, '../../uploads/videos');
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
+// On Vercel / AWS Lambda, use os.tmpdir() because repository root is read-only
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+export const UPLOAD_DIR = isServerless
+  ? path.join(os.tmpdir(), 'justfans_uploads/videos')
+  : path.resolve(__dirname, '../../uploads/videos');
+
+export const AVATAR_DIR = isServerless
+  ? path.join(os.tmpdir(), 'justfans_uploads/avatars')
+  : path.resolve(__dirname, '../../uploads/avatars');
+
+export const safeEnsureDir = (dir) => {
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (err) {
+    console.warn('[SafeDir Warning]:', err.message);
+  }
+};
+
+safeEnsureDir(UPLOAD_DIR);
+safeEnsureDir(AVATAR_DIR);
 
 // Allowed video MIME types and extensions
 const ALLOWED_MIME_TYPES = [
@@ -26,10 +45,7 @@ const ALLOWED_EXTENSIONS = ['.mp4', '.mov', '.webm', '.mkv', '.m4v'];
 // Storage configuration with diskStorage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Re-verify directory exists
-    if (!fs.existsSync(UPLOAD_DIR)) {
-      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-    }
+    safeEnsureDir(UPLOAD_DIR);
     cb(null, UPLOAD_DIR);
   },
   filename: (req, file, cb) => {
@@ -105,17 +121,9 @@ export const handleVideoUpload = (fieldName = 'video') => {
   };
 };
 
-// Avatar uploads directory: server/uploads/avatars
-export const AVATAR_DIR = path.resolve(__dirname, '../../uploads/avatars');
-if (!fs.existsSync(AVATAR_DIR)) {
-  fs.mkdirSync(AVATAR_DIR, { recursive: true });
-}
-
 const avatarStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    if (!fs.existsSync(AVATAR_DIR)) {
-      fs.mkdirSync(AVATAR_DIR, { recursive: true });
-    }
+    safeEnsureDir(AVATAR_DIR);
     cb(null, AVATAR_DIR);
   },
   filename: (req, file, cb) => {

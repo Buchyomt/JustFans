@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { UPLOAD_DIR } from '../middleware/upload.js';
+import { UPLOAD_DIR, safeEnsureDir } from '../middleware/upload.js';
 
 /**
  * Saves a base64 data URL (e.g. from canvas video frame capture) to disk as a real image file.
@@ -16,11 +16,12 @@ export const saveBase64Image = (dataUrl, prefix = 'thumb') => {
     const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
     const buffer = Buffer.from(matches[2], 'base64');
     const filename = `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${ext}`;
+    safeEnsureDir(UPLOAD_DIR);
     const filePath = path.join(UPLOAD_DIR, filename);
     fs.writeFileSync(filePath, buffer);
     return `/uploads/videos/${filename}`;
   } catch (err) {
-    console.error('[Base64 Image Save Error]:', err);
+    console.error('[Base64 Image Save Error]:', err.message);
     return dataUrl;
   }
 };
