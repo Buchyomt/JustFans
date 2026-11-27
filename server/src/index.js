@@ -46,7 +46,7 @@ if (fs.existsSync(clientDistPath)) {
 }
 
 // API Health Check
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   const isMongoConnected = mongoose.connection.readyState === 1;
   res.json({
     status: 'ok',
