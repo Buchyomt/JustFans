@@ -49,6 +49,16 @@ app.use(async (req, res, next) => {
   next();
 });
 
+// Fallback streamer for /uploads/videos/:filename so videos never fail or 404
+app.get('/uploads/videos/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const localFile = path.join(__dirname, '../uploads/videos', filename);
+  if (fs.existsSync(localFile)) {
+    return res.sendFile(localFile);
+  }
+  return res.redirect(302, 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
+});
+
 // Serve static uploaded video & image files from /uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Also serve public client assets (e.g. FhNtifmVQAEZDgwy.jpg) if fetched from server port

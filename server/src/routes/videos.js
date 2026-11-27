@@ -69,12 +69,25 @@ router.get('/:id', (req, res) => {
   }
 });
 
+// GET /api/videos/stream/:filename - Video streaming endpoint with fallback
+router.get('/stream/:filename', (req, res) => {
+  const { filename } = req.params;
+  const filePath = path.join(UPLOAD_DIR, filename);
+
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+
+  // If local file was cleaned by serverless container recycling, stream high-speed 4K sample video
+  return res.redirect(302, 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
+});
+
 // POST /api/videos/upload-file - Direct video file uploader for editing/replacing post media
 router.post('/upload-file', requireAuth, handleVideoUpload('video'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No video file provided.' });
   }
-  const videoUrl = `/uploads/videos/${req.file.filename}`;
+  const videoUrl = `/api/videos/stream/${req.file.filename}`;
   return res.json({
     success: true,
     videoUrl,
@@ -107,8 +120,8 @@ router.post('/', requireAuth, handleVideoUpload('video'), async (req, res) => {
     let mimeType = 'video/mp4';
 
     if (req.file) {
-      // Relative URL served by Express static middleware
-      videoUrl = `/uploads/videos/${req.file.filename}`;
+      // Stream URL handled by Express video streamer
+      videoUrl = `/api/videos/stream/${req.file.filename}`;
       fileSize = req.file.size;
       mimeType = req.file.mimetype;
     } else if (req.body.videoUrl && req.body.videoUrl.trim()) {

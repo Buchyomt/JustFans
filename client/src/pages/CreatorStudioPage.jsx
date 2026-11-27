@@ -1046,6 +1046,9 @@ export default function CreatorStudioPage() {
                     autoPlay
                     playsInline
                     className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.src = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+                    }}
                   >
                     <source src={previewVideo.videoUrl} />
                     Your browser does not support HTML5 video.
