@@ -36,6 +36,9 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Database auto-reconnect middleware for Serverless (Vercel)
 app.use(async (req, res, next) => {
+  if (req.path === '/api/health' || req.path === '/health') {
+    return next();
+  }
   if (mongoose.connection.readyState < 1 && process.env.MONGODB_URI) {
     try {
       await connectDB();
