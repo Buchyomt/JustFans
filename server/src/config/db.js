@@ -8,7 +8,13 @@ try {
   // Ignore if custom DNS fails
 }
 
+let cachedPromise = null;
+
 export const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) {
+    return true;
+  }
+
   const uri = process.env.MONGODB_URI;
 
   if (!uri || !uri.trim()) {
@@ -17,10 +23,18 @@ export const connectDB = async () => {
     return false;
   }
 
-  try {
-    const conn = await mongoose.connect(uri.trim(), {
-      serverSelectionTimeoutMS: 20000
+  if (!cachedPromise) {
+    cachedPromise = mongoose.connect(uri.trim(), {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 5000,
+    }).catch(err => {
+      cachedPromise = null;
+      throw err;
     });
+  }
+
+  try {
+    const conn = await cachedPromise;
     console.log(`\n=============================================================`);
     console.log(`🍃 [MongoDB Atlas] Connected Successfully!`);
     console.log(`   Host:     ${conn.connection.host}`);

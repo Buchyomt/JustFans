@@ -34,6 +34,18 @@ app.use(cors({
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
+// Database auto-reconnect middleware for Serverless (Vercel)
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState < 1 && process.env.MONGODB_URI) {
+    try {
+      await connectDB();
+    } catch (err) {
+      console.error('[MongoDB Serverless Connect Error]:', err.message);
+    }
+  }
+  next();
+});
+
 // Serve static uploaded video & image files from /uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Also serve public client assets (e.g. FhNtifmVQAEZDgwy.jpg) if fetched from server port
