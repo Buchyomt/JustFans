@@ -27,7 +27,7 @@ export const connectDB = async () => {
 
   if (!cachedPromise) {
     cachedPromise = mongoose.connect(uri.trim(), {
-      bufferCommands: false,
+      bufferCommands: true,
       serverSelectionTimeoutMS: 5000,
     }).catch(err => {
       cachedPromise = null;

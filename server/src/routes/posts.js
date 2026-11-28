@@ -356,7 +356,7 @@ router.put('/:id', requireAuth, (req, res) => {
 });
 
 // DELETE /api/posts/:id (PROTECTED - Creator self or Admin)
-router.delete('/:id', requireAuth, (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const postIdx = mockPosts.findIndex(p => p.id === req.params.id);
     if (postIdx === -1) {
