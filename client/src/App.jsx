@@ -1,6 +1,6 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -20,7 +20,76 @@ import Footer from './components/Footer';
 
 function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { loginWithGoogle } = useAuth();
+  const [oauthLoading, setOauthLoading] = useState(false);
   const isLandingPage = location.pathname === '/';
+
+  // Global handler for Google OAuth full-page redirect callback (critical for mobile Chrome & Brave)
+  useEffect(() => {
+    if (window.location.hash) {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const idToken = params.get('id_token');
+      const accessToken = params.get('access_token');
+
+      if (idToken) {
+        setOauthLoading(true);
+        try {
+          const payloadBase64 = idToken.split('.')[1];
+          const decodedStr = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
+          const payload = JSON.parse(decodeURIComponent(escape(decodedStr)));
+          loginWithGoogle({
+            email: payload.email,
+            name: payload.name || payload.email.split('@')[0],
+            picture: payload.picture,
+            role: 'fan',
+            credential: idToken
+          }).then((res) => {
+            window.history.replaceState(null, '', window.location.pathname);
+            if (res.success) {
+              navigate(res.user?.role === 'creator' ? '/studio' : '/feed');
+            }
+          }).finally(() => setOauthLoading(false));
+        } catch (e) {
+          console.error('Mobile Google id_token parse error:', e);
+          setOauthLoading(false);
+        }
+      } else if (accessToken) {
+        setOauthLoading(true);
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        })
+          .then(r => r.json())
+          .then(async (info) => {
+            if (info?.email) {
+              const res = await loginWithGoogle({
+                email: info.email,
+                name: info.name || info.email.split('@')[0],
+                picture: info.picture,
+                role: 'fan'
+              });
+              window.history.replaceState(null, '', window.location.pathname);
+              if (res.success) {
+                navigate(res.user?.role === 'creator' ? '/studio' : '/feed');
+              }
+            }
+          })
+          .catch(e => console.error('OAuth profile fetch error:', e))
+          .finally(() => setOauthLoading(false));
+      }
+    }
+  }, []);
+
+  if (oauthLoading) {
+    return (
+      <div className="min-h-screen bg-[#0b0e14] flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 border-4 border-[#00aff0] border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-white font-bold text-sm">Signing you in with Google...</p>
+        <p className="text-gray-400 text-xs mt-1">Connecting your JustFans account</p>
+      </div>
+    );
+  }
 
   // Landing Page is completely dedicated and full-width (its own standalone showcase)
   if (isLandingPage) {

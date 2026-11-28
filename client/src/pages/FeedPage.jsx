@@ -142,7 +142,7 @@ export default function FeedPage() {
           title: newTitle,
           caption: newCaption,
           mediaUrl: newMediaUrl || (newMediaType === 'video' 
-            ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' 
+            ? 'https://vjs.zencdn.net/v/oceans.mp4' 
             : 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800'),
           mediaType: newMediaType,
           isLocked: newIsLocked,

@@ -6,7 +6,8 @@ import {
   Search, 
   Sparkles, 
   CheckCircle2, 
-  Filter
+  Filter,
+  MessageSquare
 } from 'lucide-react';
 
 export default function ExplorePage() {
@@ -184,19 +185,27 @@ export default function ExplorePage() {
               </div>
 
               {/* Bottom Actions */}
-              <div className="p-5 pt-0 flex items-center gap-2">
+              <div className="p-5 pt-0 flex items-center gap-1.5">
                 <Link
                   to={`/creator/${c.username}`}
-                  className="flex-1 py-2.5 bg-[#1a2133] hover:bg-[#242e47] text-gray-200 font-bold text-xs rounded-xl text-center border border-[#2b354e] transition"
+                  className="flex-1 py-2.5 bg-[#1a2133] hover:bg-[#242e47] text-gray-200 font-bold text-xs rounded-xl text-center border border-[#2b354e] transition truncate px-2"
                 >
-                  View Profile
+                  Profile
+                </Link>
+                <Link
+                  to={`/messages?creator=${c.id}`}
+                  className="py-2.5 px-3 bg-[#161c2b] hover:bg-[#222a3d] text-cyan-400 hover:text-white font-bold text-xs rounded-xl border border-cyan-500/30 hover:border-cyan-400 flex items-center justify-center gap-1 transition"
+                  title={`Message @${c.username}`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Chat</span>
                 </Link>
                 <button
                   type="button"
                   onClick={() => setActiveSubCreator(c)}
-                  className="flex-1 py-2.5 bg-[#00aff0] hover:bg-[#0094cc] text-black font-extrabold text-xs rounded-xl text-center shadow-lg transition"
+                  className="flex-1 py-2.5 bg-[#00aff0] hover:bg-[#0094cc] text-black font-extrabold text-xs rounded-xl text-center shadow-lg transition truncate px-2"
                 >
-                  Join Channel
+                  Join
                 </button>
               </div>
 

@@ -56,7 +56,7 @@ app.get('/uploads/videos/:filename', (req, res) => {
   if (fs.existsSync(localFile)) {
     return res.sendFile(localFile);
   }
-  return res.redirect(302, 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
+  return res.redirect(302, 'https://vjs.zencdn.net/v/oceans.mp4');
 });
 
 // Serve static uploaded video & image files from /uploads directory

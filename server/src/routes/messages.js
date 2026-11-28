@@ -7,8 +7,40 @@ const router = express.Router();
 // GET /api/messages (PROTECTED)
 router.get('/', requireAuth, (req, res) => {
   const currentUser = req.user;
+  const targetCreatorParam = req.query.creator;
 
-  // If user is a fan, guarantee they always have a conversation with Nicole Shayla (creator-1)
+  // If a specific creator is requested via query param (e.g. /api/messages?creator=creator-2), ensure a thread exists
+  if (targetCreatorParam) {
+    const targetPartner = mockUsers.find(u => 
+      u.id === targetCreatorParam || 
+      (u.username && u.username.toLowerCase() === targetCreatorParam.toLowerCase())
+    );
+    if (targetPartner) {
+      let existingThread = mockMessages.find(t => 
+        (t.creatorId === targetPartner.id && t.fanId === currentUser.id) ||
+        (t.creatorId === currentUser.id && t.fanId === targetPartner.id)
+      );
+      if (!existingThread) {
+        existingThread = {
+          id: `thread-${targetPartner.id}-${currentUser.id}`,
+          creatorId: targetPartner.id,
+          fanId: currentUser.id,
+          messages: [
+            {
+              id: `m-welcome-${targetPartner.id}-${currentUser.id}`,
+              senderId: targetPartner.id,
+              text: `Hey! 💕 Welcome to @${targetPartner.username}'s private VIP chat! Send a message or tip to unlock exclusive content.`,
+              timestamp: new Date().toISOString(),
+              tip: 0
+            }
+          ]
+        };
+        mockMessages.unshift(existingThread);
+      }
+    }
+  }
+
+  // If user is a fan with zero threads, guarantee they start with a conversation
   if (currentUser.role === 'fan') {
     let nicoleThread = mockMessages.find(t => 
       (t.creatorId === 'creator-1' && t.fanId === currentUser.id) ||
@@ -73,6 +105,70 @@ router.get('/', requireAuth, (req, res) => {
   res.json({
     success: true,
     threads: userThreads
+  });
+});
+
+// POST /api/messages/start (PROTECTED) - Start or find chat thread with any creator or user
+router.post('/start', requireAuth, (req, res) => {
+  const { partnerId } = req.body;
+  const currentUser = req.user;
+
+  if (!partnerId) {
+    return res.status(400).json({ success: false, message: 'Partner ID or username is required.' });
+  }
+
+  const partner = mockUsers.find(u => 
+    u.id === partnerId || 
+    (u.username && u.username.toLowerCase() === partnerId.toLowerCase())
+  );
+
+  if (!partner) {
+    return res.status(404).json({ success: false, message: 'User or creator not found.' });
+  }
+
+  let thread = mockMessages.find(t => 
+    (t.creatorId === partner.id && t.fanId === currentUser.id) ||
+    (t.creatorId === currentUser.id && t.fanId === partner.id)
+  );
+
+  if (!thread) {
+    const isPartnerCreator = partner.role === 'creator';
+    thread = {
+      id: `thread-${partner.id}-${currentUser.id}`,
+      creatorId: isPartnerCreator ? partner.id : currentUser.id,
+      fanId: isPartnerCreator ? currentUser.id : partner.id,
+      messages: [
+        {
+          id: `m-init-${Date.now()}`,
+          senderId: partner.id,
+          text: `Hey! 💕 Welcome to @${partner.username}'s chat! Send a message or tip to unlock custom content.`,
+          timestamp: new Date().toISOString(),
+          tip: 0
+        }
+      ]
+    };
+    mockMessages.unshift(thread);
+  }
+
+  const partnerUser = mockUsers.find(u => u.id === (currentUser.id === thread.fanId ? thread.creatorId : thread.fanId)) || partner;
+  const enrichedThread = {
+    ...thread,
+    partner: {
+      id: partnerUser.id,
+      name: partnerUser.name,
+      username: partnerUser.username,
+      avatar: partnerUser.avatar || (partnerUser.id === 'creator-1' ? '/FhNtifmVQAEZDgwy.jpg' : ''),
+      role: partnerUser.role,
+      verified: partnerUser.verified
+    },
+    lastMessage: thread.messages[thread.messages.length - 1]?.text || 'No messages yet',
+    lastTimestamp: thread.messages[thread.messages.length - 1]?.timestamp || new Date().toISOString()
+  };
+
+  return res.json({
+    success: true,
+    threadId: thread.id,
+    thread: enrichedThread
   });
 });
 

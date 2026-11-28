@@ -79,7 +79,7 @@ router.get('/stream/:filename', (req, res) => {
   }
 
   // If local file was cleaned by serverless container recycling, stream high-speed 4K sample video
-  return res.redirect(302, 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
+  return res.redirect(302, 'https://vjs.zencdn.net/v/oceans.mp4');
 });
 
 // POST /api/videos/upload-file - Direct video file uploader for editing/replacing post media

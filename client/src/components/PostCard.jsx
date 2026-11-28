@@ -367,19 +367,18 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
             postData.mediaType === 'video' ? (
               <div className="relative aspect-video w-full bg-black flex items-center justify-center group/video">
                 <video
-                  src={videoSrc || postData.mediaUrl}
+                  src={videoSrc || postData.mediaUrl || "https://vjs.zencdn.net/v/oceans.mp4"}
                   controls
                   playsInline
                   preload="metadata"
                   poster={getPostCover(postData)}
                   className="w-full h-full object-contain bg-black"
                   onError={() => {
-                    if (videoSrc && videoSrc.startsWith('/uploads/')) {
-                      setVideoSrc("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4");
+                    if (videoSrc !== "https://vjs.zencdn.net/v/oceans.mp4") {
+                      setVideoSrc("https://vjs.zencdn.net/v/oceans.mp4");
                     }
                   }}
                 >
-                  <source src={videoSrc || postData.mediaUrl} />
                   Your browser does not support HTML5 video.
                 </video>
 

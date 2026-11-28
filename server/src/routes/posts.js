@@ -137,7 +137,7 @@ router.post('/', requireAuth, (req, res) => {
     title,
     caption: caption || "",
     mediaType: mediaType || "video",
-    mediaUrl: mediaUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    mediaUrl: mediaUrl || "https://vjs.zencdn.net/v/oceans.mp4",
     thumbnail: resolvedCover,
     isLocked: Boolean(isLocked),
     requiredTier: requiredTier || (isLocked ? "Standard Fan" : "free"),

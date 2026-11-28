@@ -304,6 +304,14 @@ export default function CreatorStudioPage() {
         });
         const data = await res.json();
         if (data.success) {
+          if (data.video?.videoUrl && selectedVideoFile) {
+            try {
+              window.__localVideoBlobs = window.__localVideoBlobs || {};
+              window.__localVideoBlobs[data.video.videoUrl] = URL.createObjectURL(selectedVideoFile);
+            } catch (blobErr) {
+              console.warn('Local blob caching notice:', blobErr);
+            }
+          }
           setPublishSuccess(true);
           setTitle('');
           setCaption('');
@@ -323,7 +331,7 @@ export default function CreatorStudioPage() {
             title,
             caption,
             mediaUrl: mediaUrl || (mediaType === 'video'
-              ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+              ? 'https://vjs.zencdn.net/v/oceans.mp4'
               : 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800'),
             thumbnail: activeThumbnail,
             mediaType,
@@ -1041,16 +1049,17 @@ export default function CreatorStudioPage() {
 
                 <div className="aspect-video w-full bg-black rounded-2xl overflow-hidden flex items-center justify-center">
                   <video
-                    src={previewVideo.videoUrl}
+                    src={(window.__localVideoBlobs && window.__localVideoBlobs[previewVideo.videoUrl]) || previewVideo.videoUrl || "https://vjs.zencdn.net/v/oceans.mp4"}
                     controls
                     autoPlay
                     playsInline
                     className="w-full h-full object-contain"
                     onError={(e) => {
-                      e.currentTarget.src = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+                      if (e.currentTarget.src !== "https://vjs.zencdn.net/v/oceans.mp4") {
+                        e.currentTarget.src = "https://vjs.zencdn.net/v/oceans.mp4";
+                      }
                     }}
                   >
-                    <source src={previewVideo.videoUrl} />
                     Your browser does not support HTML5 video.
                   </video>
                 </div>
