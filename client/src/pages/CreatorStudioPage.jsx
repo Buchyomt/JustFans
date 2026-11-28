@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import { extractVideoFrames, extractSingleFrameAtTime, formatVideoTime } from '../utils/videoThumbnails';
+import { saveVideoToLocalCache, getVideoFromLocalCache } from '../utils/videoStorage';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -39,6 +40,30 @@ export default function CreatorStudioPage() {
   const [analytics, setAnalytics] = useState(null);
   const [uploadedVideos, setUploadedVideos] = useState([]);
   const [previewVideo, setPreviewVideo] = useState(null);
+  const [previewResolvedSrc, setPreviewResolvedSrc] = useState('');
+
+  useEffect(() => {
+    if (!previewVideo) {
+      setPreviewResolvedSrc('');
+      return;
+    }
+    let isMounted = true;
+    (async () => {
+      const cached = await getVideoFromLocalCache(previewVideo.videoUrl);
+      if (cached && isMounted) {
+        setPreviewResolvedSrc(cached);
+        return;
+      }
+      if (window.__localVideoBlobs && window.__localVideoBlobs[previewVideo.videoUrl] && isMounted) {
+        setPreviewResolvedSrc(window.__localVideoBlobs[previewVideo.videoUrl]);
+        return;
+      }
+      if (isMounted) {
+        setPreviewResolvedSrc(previewVideo.videoUrl || "https://vjs.zencdn.net/v/oceans.mp4");
+      }
+    })();
+    return () => { isMounted = false; };
+  }, [previewVideo]);
 
   // New post / video state
   const [title, setTitle] = useState('');
@@ -308,6 +333,10 @@ export default function CreatorStudioPage() {
             try {
               window.__localVideoBlobs = window.__localVideoBlobs || {};
               window.__localVideoBlobs[data.video.videoUrl] = URL.createObjectURL(selectedVideoFile);
+              await saveVideoToLocalCache(data.video.videoUrl, selectedVideoFile);
+              if (data.video.id) {
+                await saveVideoToLocalCache(data.video.id, selectedVideoFile);
+              }
             } catch (blobErr) {
               console.warn('Local blob caching notice:', blobErr);
             }
@@ -1049,7 +1078,7 @@ export default function CreatorStudioPage() {
 
                 <div className="aspect-video w-full bg-black rounded-2xl overflow-hidden flex items-center justify-center">
                   <video
-                    src={(window.__localVideoBlobs && window.__localVideoBlobs[previewVideo.videoUrl]) || previewVideo.videoUrl || "https://vjs.zencdn.net/v/oceans.mp4"}
+                    src={previewResolvedSrc || previewVideo.videoUrl}
                     controls
                     autoPlay
                     playsInline

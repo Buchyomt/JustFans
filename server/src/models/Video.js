@@ -1,4 +1,21 @@
+import mongoose from 'mongoose';
 import { User } from './User.js';
+
+// Mongoose Persistent Schema for MongoDB Atlas
+const VideoSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  title: { type: String, required: true },
+  description: { type: String, default: '' },
+  videoUrl: { type: String, required: true },
+  uploaderId: { type: String, required: true },
+  thumbnail: { type: String, default: '' },
+  fileSize: { type: Number, default: 0 },
+  mimeType: { type: String, default: 'video/mp4' },
+  views: { type: Number, default: 0 },
+  createdAt: { type: String, default: () => new Date().toISOString() }
+}, { timestamps: true });
+
+export const MongoVideo = mongoose.models.Video || mongoose.model('Video', VideoSchema);
 
 // Seed video collection
 const initialVideos = [
@@ -55,7 +72,7 @@ class VideoModel {
   }
 
   // Create and persist a new video entry
-  create({ title, description, videoUrl, uploaderId, thumbnail, fileSize, mimeType }) {
+  async create({ title, description, videoUrl, uploaderId, thumbnail, fileSize, mimeType }) {
     const newVideo = {
       id: `video-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       title: title.trim(),
@@ -72,39 +89,81 @@ class VideoModel {
     };
 
     this.videos.unshift(newVideo);
-    return newVideo;
+
+    if (mongoose.connection.readyState >= 1) {
+      try {
+        await MongoVideo.create(newVideo);
+      } catch (err) {
+        console.warn('[MongoVideo create Warning]:', err.message);
+      }
+    }
+
+    return this.enrichWithUploader(newVideo);
   }
 
   // Find all videos with enriched uploader metadata
-  findAll() {
-    return this.videos.map(v => this.enrichWithUploader(v));
+  async findAll() {
+    let videos = this.videos;
+    if (mongoose.connection.readyState >= 1) {
+      try {
+        const docs = await MongoVideo.find().sort({ createdAt: -1 }).lean();
+        if (docs && docs.length > 0) {
+          const merged = [...docs];
+          for (const mv of this.videos) {
+            if (!merged.some(v => v.id === mv.id)) {
+              merged.push(mv);
+            }
+          }
+          videos = merged;
+        }
+      } catch (err) {
+        console.warn('[MongoVideo findAll Warning]:', err.message);
+      }
+    }
+    return videos.map(v => this.enrichWithUploader(v));
   }
 
   // Find single video by ID
-  findById(id) {
-    const video = this.videos.find(v => v.id === id);
+  async findById(id) {
+    let video = this.videos.find(v => v.id === id);
+    if (!video && mongoose.connection.readyState >= 1) {
+      try {
+        video = await MongoVideo.findOne({ id }).lean();
+        if (video) this.videos.push(video);
+      } catch (err) {
+        console.warn('[MongoVideo findById Warning]:', err.message);
+      }
+    }
     if (!video) return null;
     return this.enrichWithUploader(video);
   }
 
   // Find videos by uploaderId
-  findByUploader(uploaderId) {
-    return this.videos
-      .filter(v => v.uploaderId === uploaderId)
-      .map(v => this.enrichWithUploader(v));
+  async findByUploader(uploaderId) {
+    const all = await this.findAll();
+    return all.filter(v => v.uploaderId === uploaderId);
   }
 
   // Delete a video (only owner or admin)
-  delete(id, uploaderId) {
+  async delete(id, uploaderId) {
     const index = this.videos.findIndex(v => v.id === id && v.uploaderId === uploaderId);
-    if (index === -1) return null;
-    const [deleted] = this.videos.splice(index, 1);
+    let deleted = null;
+    if (index !== -1) {
+      [deleted] = this.videos.splice(index, 1);
+    }
+    if (mongoose.connection.readyState >= 1) {
+      try {
+        await MongoVideo.deleteOne({ id, uploaderId });
+      } catch (err) {
+        console.warn('[MongoVideo delete Warning]:', err.message);
+      }
+    }
     return deleted;
   }
 
   // Attach uploader profile info (name, username, avatar, verified, category)
   enrichWithUploader(video) {
-    const uploader = User.findById(video.uploaderId);
+    const uploader = User.findByIdSync ? User.findByIdSync(video.uploaderId) : User.users.find(u => u.id === video.uploaderId);
     return {
       ...video,
       uploader: uploader ? {

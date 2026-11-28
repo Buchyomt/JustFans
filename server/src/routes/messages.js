@@ -1,20 +1,30 @@
 import express from 'express';
 import { mockMessages, mockUsers } from '../data/mockData.js';
+import { User } from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// Helper to look up partner user across memory and MongoDB Atlas
+const resolvePartner = async (partnerId) => {
+  if (!partnerId) return null;
+  let p = User.users.find(u => u.id === partnerId || (u.username && u.username.toLowerCase() === partnerId.toLowerCase()));
+  if (p) return p;
+  p = await User.findById(partnerId);
+  if (p) return p;
+  p = await User.findByUsername(partnerId);
+  if (p) return p;
+  return mockUsers.find(u => u.id === partnerId || (u.username && u.username.toLowerCase() === partnerId.toLowerCase())) || null;
+};
+
 // GET /api/messages (PROTECTED)
-router.get('/', requireAuth, (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   const currentUser = req.user;
   const targetCreatorParam = req.query.creator;
 
   // If a specific creator is requested via query param (e.g. /api/messages?creator=creator-2), ensure a thread exists
   if (targetCreatorParam) {
-    const targetPartner = mockUsers.find(u => 
-      u.id === targetCreatorParam || 
-      (u.username && u.username.toLowerCase() === targetCreatorParam.toLowerCase())
-    );
+    const targetPartner = await resolvePartner(targetCreatorParam);
     if (targetPartner) {
       let existingThread = mockMessages.find(t => 
         (t.creatorId === targetPartner.id && t.fanId === currentUser.id) ||
@@ -66,41 +76,43 @@ router.get('/', requireAuth, (req, res) => {
     }
   }
 
-  const userThreads = mockMessages.filter(t => 
-    t.fanId === currentUser.id || t.creatorId === currentUser.id
-  ).map(thread => {
-    const isFan = currentUser.id === thread.fanId;
-    const partnerId = isFan ? thread.creatorId : thread.fanId;
-    let partner = mockUsers.find(u => u.id === partnerId);
-    if (!partner && partnerId === 'creator-1') {
-      partner = mockUsers.find(u => u.id === 'creator-1');
-    }
-    const lastMsg = thread.messages[thread.messages.length - 1];
+  const userThreads = await Promise.all(
+    mockMessages
+      .filter(t => t.fanId === currentUser.id || t.creatorId === currentUser.id)
+      .map(async (thread) => {
+        const isFan = currentUser.id === thread.fanId;
+        const partnerId = isFan ? thread.creatorId : thread.fanId;
+        let partner = await resolvePartner(partnerId);
+        if (!partner && partnerId === 'creator-1') {
+          partner = await resolvePartner('creator-1');
+        }
+        const lastMsg = thread.messages[thread.messages.length - 1];
 
-    return {
-      id: thread.id,
-      creatorId: thread.creatorId,
-      fanId: thread.fanId,
-      partner: partner ? {
-        id: partner.id,
-        name: partner.name,
-        username: partner.username,
-        avatar: partner.avatar || (partner.id === 'creator-1' ? '/FhNtifmVQAEZDgwy.jpg' : ''),
-        role: partner.role,
-        verified: partner.verified
-      } : {
-        id: partnerId,
-        name: partnerId === 'creator-1' ? 'Nicole Shayla' : 'Creator',
-        username: partnerId === 'creator-1' ? 'uni_ques78' : 'creator',
-        avatar: '/FhNtifmVQAEZDgwy.jpg',
-        role: 'creator',
-        verified: true
-      },
-      lastMessage: lastMsg?.text || "No messages yet",
-      lastTimestamp: lastMsg?.timestamp || null,
-      messages: thread.messages
-    };
-  });
+        return {
+          id: thread.id,
+          creatorId: thread.creatorId,
+          fanId: thread.fanId,
+          partner: partner ? {
+            id: partner.id,
+            name: partner.name,
+            username: partner.username,
+            avatar: partner.avatar || (partner.id === 'creator-1' ? '/FhNtifmVQAEZDgwy.jpg' : ''),
+            role: partner.role,
+            verified: partner.verified
+          } : {
+            id: partnerId,
+            name: partnerId === 'creator-1' ? 'Nicole Shayla' : 'Creator',
+            username: partnerId === 'creator-1' ? 'uni_ques78' : 'creator',
+            avatar: '/FhNtifmVQAEZDgwy.jpg',
+            role: 'creator',
+            verified: true
+          },
+          lastMessage: lastMsg?.text || "No messages yet",
+          lastTimestamp: lastMsg?.timestamp || null,
+          messages: thread.messages
+        };
+      })
+  );
 
   res.json({
     success: true,
@@ -109,7 +121,7 @@ router.get('/', requireAuth, (req, res) => {
 });
 
 // POST /api/messages/start (PROTECTED) - Start or find chat thread with any creator or user
-router.post('/start', requireAuth, (req, res) => {
+router.post('/start', requireAuth, async (req, res) => {
   const { partnerId } = req.body;
   const currentUser = req.user;
 
@@ -117,10 +129,7 @@ router.post('/start', requireAuth, (req, res) => {
     return res.status(400).json({ success: false, message: 'Partner ID or username is required.' });
   }
 
-  const partner = mockUsers.find(u => 
-    u.id === partnerId || 
-    (u.username && u.username.toLowerCase() === partnerId.toLowerCase())
-  );
+  const partner = await resolvePartner(partnerId);
 
   if (!partner) {
     return res.status(404).json({ success: false, message: 'User or creator not found.' });
@@ -150,7 +159,7 @@ router.post('/start', requireAuth, (req, res) => {
     mockMessages.unshift(thread);
   }
 
-  const partnerUser = mockUsers.find(u => u.id === (currentUser.id === thread.fanId ? thread.creatorId : thread.fanId)) || partner;
+  const partnerUser = (await resolvePartner(currentUser.id === thread.fanId ? thread.creatorId : thread.fanId)) || partner;
   const enrichedThread = {
     ...thread,
     partner: {
@@ -173,7 +182,7 @@ router.post('/start', requireAuth, (req, res) => {
 });
 
 // POST /api/messages/:threadId (PROTECTED)
-router.post('/:threadId', requireAuth, (req, res) => {
+router.post('/:threadId', requireAuth, async (req, res) => {
   const { threadId } = req.params;
   const { text, tip, isLockedPPV, price, attachmentUrl } = req.body;
   const currentUser = req.user;
@@ -187,8 +196,8 @@ router.post('/:threadId', requireAuth, (req, res) => {
     );
   }
   if (!thread) {
-    const partner = mockUsers.find(u => u.id === threadId || u.username === threadId) || 
-      (threadId === 'creator-1' || threadId === 'uni_ques78' ? mockUsers.find(u => u.id === 'creator-1') : null);
+    const partner = (await resolvePartner(threadId)) || 
+      (threadId === 'creator-1' || threadId === 'uni_ques78' ? await resolvePartner('creator-1') : null);
 
     if (partner) {
       const isPartnerCreator = partner.role === 'creator';

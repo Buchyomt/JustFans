@@ -5,6 +5,7 @@ import { mockPosts, mockUsers } from '../data/mockData.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
 import { UPLOAD_DIR } from '../middleware/upload.js';
 import { Video } from '../models/Video.js';
+import { Post, MongoPost } from '../models/Post.js';
 import { saveBase64Image } from '../utils/imageSaver.js';
 
 const router = express.Router();
@@ -67,11 +68,11 @@ const enrichPost = (post, currentUser) => {
 };
 
 // GET /api/posts - Viewable publicly with optional personalized auth context
-router.get('/', optionalAuth, (req, res) => {
+router.get('/', optionalAuth, async (req, res) => {
   const { filter, creatorId, mediaType } = req.query;
   const currentUser = req.user;
 
-  let posts = [...mockPosts];
+  let posts = await Post.getAll();
 
   if (creatorId) {
     posts = posts.filter(p => p.creatorId === creatorId);
@@ -103,8 +104,9 @@ router.get('/', optionalAuth, (req, res) => {
 });
 
 // GET /api/posts/:id
-router.get('/:id', optionalAuth, (req, res) => {
-  const post = mockPosts.find(p => p.id === req.params.id);
+router.get('/:id', optionalAuth, async (req, res) => {
+  const allPosts = await Post.getAll();
+  const post = allPosts.find(p => p.id === req.params.id);
   if (!post) {
     return res.status(404).json({ success: false, message: "Post not found." });
   }
@@ -116,7 +118,7 @@ router.get('/:id', optionalAuth, (req, res) => {
 });
 
 // POST /api/posts - Upload/publish new post (PROTECTED by requireAuth)
-router.post('/', requireAuth, (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   const currentUser = req.user;
   if (currentUser.role !== 'creator') {
     return res.status(403).json({ success: false, message: "Only creators can publish posts." });
@@ -128,7 +130,7 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(400).json({ success: false, message: "Post title is required." });
   }
 
-    const postId = `post-${Date.now()}`;
+  const postId = `post-${Date.now()}`;
   const resolvedCover = resolveTeaserCover(thumbnail, mediaUrl, postId);
 
   const newPost = {
@@ -151,7 +153,7 @@ router.post('/', requireAuth, (req, res) => {
     unlockedUsers: []
   };
 
-  mockPosts.unshift(newPost);
+  await Post.create(newPost);
   currentUser.postCount = (currentUser.postCount || 0) + 1;
 
   res.status(201).json({
@@ -384,7 +386,8 @@ router.delete('/:id', requireAuth, (req, res) => {
       Video.delete(videoEntry.id, currentUser.id);
     }
 
-    // Remove from mockPosts array
+    // Remove from mockPosts array and MongoDB Atlas
+    await Post.delete(req.params.id);
     mockPosts.splice(postIdx, 1);
 
     if (currentUser.postCount && currentUser.postCount > 0) {

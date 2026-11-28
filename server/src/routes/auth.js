@@ -56,7 +56,7 @@ router.post('/signup/request-code', async (req, res) => {
     }
 
     // Duplicate check in database
-    const duplicateCheck = User.checkDuplicate({ username: username.trim(), email: email.trim() });
+    const duplicateCheck = await User.checkDuplicate({ username: username.trim(), email: email.trim() });
     if (duplicateCheck.duplicate) {
       return res.status(409).json({
         success: false,
@@ -285,7 +285,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const user = User.findByCredential(credential);
+    const user = await User.findByCredential(credential);
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -335,7 +335,7 @@ router.put('/profile', requireAuth, async (req, res) => {
     // If username is changing, ensure it's not taken by another user
     if (username && username.trim().toLowerCase() !== currentUser.username.toLowerCase()) {
       const cleanUsername = username.trim().toLowerCase();
-      const existing = User.findByUsername(cleanUsername);
+      const existing = await User.findByUsername(cleanUsername);
       if (existing && existing.id !== currentUser.id) {
         return res.status(400).json({
           success: false,
@@ -447,7 +447,7 @@ router.post('/google', async (req, res) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    let user = User.findByEmail(cleanEmail);
+    let user = await User.findByEmail(cleanEmail);
 
     if (user) {
       // Existing user logging in with Google
@@ -462,7 +462,7 @@ router.post('/google', async (req, res) => {
 
     // New user signing up with Google
     let username = cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '');
-    if (User.findByUsername(username)) {
+    if (await User.findByUsername(username)) {
       username = `${username}_${Math.floor(100 + Math.random() * 900)}`;
     }
 

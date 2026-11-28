@@ -1,8 +1,10 @@
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { User } from '../models/User.js';
+import { connectDB } from '../config/db.js';
 
 // Authentication middleware to protect designated API routes
-export const requireAuth = (req, res, next) => {
+export const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -18,7 +20,16 @@ export const requireAuth = (req, res, next) => {
     const secret = process.env.JWT_SECRET || 'justfans_super_secret_jwt_key_2026';
     const decoded = jwt.verify(token, secret);
     
-    const user = User.findById(decoded.id);
+    // Auto-reconnect to MongoDB Atlas if serverless instance just spun up
+    if (mongoose.connection.readyState < 1 && process.env.MONGODB_URI) {
+      try {
+        await connectDB();
+      } catch (dbErr) {
+        console.warn('[requireAuth DB Connect Warning]:', dbErr.message);
+      }
+    }
+
+    const user = await User.findById(decoded.id);
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -43,7 +54,7 @@ export const requireAuth = (req, res, next) => {
 };
 
 // Optional auth: populates req.user if token is valid, but allows guest access if absent
-export const optionalAuth = (req, res, next) => {
+export const optionalAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -56,7 +67,14 @@ export const optionalAuth = (req, res, next) => {
   try {
     const secret = process.env.JWT_SECRET || 'justfans_super_secret_jwt_key_2026';
     const decoded = jwt.verify(token, secret);
-    req.user = User.findById(decoded.id) || null;
+
+    if (mongoose.connection.readyState < 1 && process.env.MONGODB_URI) {
+      try {
+        await connectDB();
+      } catch {}
+    }
+
+    req.user = (await User.findById(decoded.id)) || null;
   } catch {
     req.user = null;
   }

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { extractVideoFrames, formatVideoTime } from '../utils/videoThumbnails';
+import { getVideoFromLocalCache } from '../utils/videoStorage';
 import { 
   Heart, 
   MessageCircle, 
@@ -76,11 +77,24 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
 
   // Sync state if post prop updates
   React.useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      if (post.mediaUrl) {
+        const cached = await getVideoFromLocalCache(post.mediaUrl);
+        if (cached && isMounted) {
+          setVideoSrc(cached);
+          return;
+        }
+      }
+      if (isMounted) {
+        setVideoSrc(post.mediaUrl || '');
+      }
+    })();
+
     setPostData(post);
     setEditTitle(post.title);
     setEditCaption(post.caption || '');
     setEditMediaUrl(post.mediaUrl || '');
-    setVideoSrc(post.mediaUrl || '');
     setEditThumbnail(getPostCover(post));
     setEditIsLocked(Boolean(post.isLocked));
     setEditPrice(post.priceToUnlock?.toString() || '18.66');
@@ -89,6 +103,7 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
     setIsUnlocked(post.hasAccess);
     setIsBookmarked(Boolean(post.isBookmarked));
     setComments(post.comments || []);
+    return () => { isMounted = false; };
   }, [post]);
 
   const requireLoginPrompt = () => {

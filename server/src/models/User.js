@@ -47,39 +47,123 @@ class UserModel {
     this.users = mockUsers;
   }
 
-  // Find user by unique ID
-  findById(id) {
+  // Find user by unique ID (queries memory first, then MongoDB Atlas)
+  async findById(id) {
+    if (!id) return null;
+    let user = this.users.find(u => u.id === id);
+    if (user) return user;
+
+    if (mongoose.connection.readyState >= 1) {
+      try {
+        const doc = await MongoUser.findOne({ id }).lean();
+        if (doc) {
+          const idx = this.users.findIndex(u => u.id === doc.id);
+          if (idx >= 0) this.users[idx] = doc;
+          else this.users.push(doc);
+          return doc;
+        }
+      } catch (err) {
+        console.error('[MongoUser findById Notice]:', err.message);
+      }
+    }
+    return null;
+  }
+
+  findByIdSync(id) {
+    if (!id) return null;
     return this.users.find(u => u.id === id) || null;
   }
 
   // Find user by Email (case-insensitive)
-  findByEmail(email) {
+  async findByEmail(email) {
     if (!email) return null;
-    return this.users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase()) || null;
+    const clean = email.toLowerCase().trim();
+    let user = this.users.find(u => u.email && u.email.toLowerCase() === clean);
+    if (user) return user;
+
+    if (mongoose.connection.readyState >= 1) {
+      try {
+        const doc = await MongoUser.findOne({ email: clean }).lean();
+        if (doc) {
+          const idx = this.users.findIndex(u => u.id === doc.id);
+          if (idx >= 0) this.users[idx] = doc;
+          else this.users.push(doc);
+          return doc;
+        }
+      } catch (err) {
+        console.error('[MongoUser findByEmail Notice]:', err.message);
+      }
+    }
+    return null;
+  }
+
+  findByEmailSync(email) {
+    if (!email) return null;
+    return this.users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase().trim()) || null;
   }
 
   // Find user by Username (case-insensitive)
-  findByUsername(username) {
+  async findByUsername(username) {
     if (!username) return null;
-    return this.users.find(u => u.username && u.username.toLowerCase() === username.toLowerCase()) || null;
+    const clean = username.toLowerCase().trim();
+    let user = this.users.find(u => u.username && u.username.toLowerCase() === clean);
+    if (user) return user;
+
+    if (mongoose.connection.readyState >= 1) {
+      try {
+        const doc = await MongoUser.findOne({ username: clean }).lean();
+        if (doc) {
+          const idx = this.users.findIndex(u => u.id === doc.id);
+          if (idx >= 0) this.users[idx] = doc;
+          else this.users.push(doc);
+          return doc;
+        }
+      } catch (err) {
+        console.error('[MongoUser findByUsername Notice]:', err.message);
+      }
+    }
+    return null;
+  }
+
+  findByUsernameSync(username) {
+    if (!username) return null;
+    return this.users.find(u => u.username && u.username.toLowerCase() === username.toLowerCase().trim()) || null;
   }
 
   // Find by either email or username
-  findByCredential(credential) {
+  async findByCredential(credential) {
     if (!credential) return null;
     const cred = credential.toLowerCase().trim();
-    return this.users.find(u => 
+    let user = this.users.find(u => 
       (u.email && u.email.toLowerCase() === cred) || 
       (u.username && u.username.toLowerCase() === cred)
-    ) || null;
+    );
+    if (user) return user;
+
+    if (mongoose.connection.readyState >= 1) {
+      try {
+        const doc = await MongoUser.findOne({
+          $or: [{ email: cred }, { username: cred }]
+        }).lean();
+        if (doc) {
+          const idx = this.users.findIndex(u => u.id === doc.id);
+          if (idx >= 0) this.users[idx] = doc;
+          else this.users.push(doc);
+          return doc;
+        }
+      } catch (err) {
+        console.error('[MongoUser findByCredential Notice]:', err.message);
+      }
+    }
+    return null;
   }
 
   // Duplicate validation check
-  checkDuplicate({ username, email }) {
-    if (username && this.findByUsername(username)) {
+  async checkDuplicate({ username, email }) {
+    if (username && (await this.findByUsername(username))) {
       return { duplicate: true, field: 'username', message: 'Username is already taken.' };
     }
-    if (email && this.findByEmail(email)) {
+    if (email && (await this.findByEmail(email))) {
       return { duplicate: true, field: 'email', message: 'An account with this email already exists.' };
     }
     return { duplicate: false };

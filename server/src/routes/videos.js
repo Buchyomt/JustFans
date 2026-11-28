@@ -1,7 +1,9 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
+import mongoose from 'mongoose';
 import { Video } from '../models/Video.js';
+import { Post } from '../models/Post.js';
 import { requireAuth } from '../middleware/auth.js';
 import { handleVideoUpload, UPLOAD_DIR } from '../middleware/upload.js';
 import { mockPosts } from '../data/mockData.js';
@@ -9,11 +11,23 @@ import { resolveTeaserCover } from './posts.js';
 
 const router = express.Router();
 
+// Helper to access MongoDB GridFS bucket
+const getGridBucket = () => {
+  if (mongoose.connection.readyState >= 1) {
+    try {
+      return new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'videos' });
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
 // GET /api/videos - Public endpoint to fetch all uploaded videos with uploader metadata
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { uploaderId, search } = req.query;
-    let videoList = Video.findAll();
+    let videoList = await Video.findAll();
 
     if (uploaderId) {
       videoList = videoList.filter(v => v.uploaderId === uploaderId);
@@ -43,9 +57,9 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/videos/:id - Public endpoint to fetch a single video by ID
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const video = Video.findById(req.params.id);
+    const video = await Video.findById(req.params.id);
     if (!video) {
       return res.status(404).json({
         success: false,
@@ -69,16 +83,58 @@ router.get('/:id', (req, res) => {
   }
 });
 
-// GET /api/videos/stream/:filename - Video streaming endpoint with fallback
-router.get('/stream/:filename', (req, res) => {
+// GET /api/videos/stream/:filename - Video streaming endpoint with MongoDB GridFS and range support
+router.get('/stream/:filename', async (req, res) => {
   const { filename } = req.params;
   const filePath = path.join(UPLOAD_DIR, filename);
 
+  // 1. If file exists on local temporary disk
   if (fs.existsSync(filePath)) {
     return res.sendFile(filePath);
   }
 
-  // If local file was cleaned by serverless container recycling, stream high-speed 4K sample video
+  // 2. Stream directly from MongoDB Atlas GridFS
+  if (mongoose.connection.readyState >= 1) {
+    try {
+      const bucket = getGridBucket();
+      if (bucket) {
+        const files = await mongoose.connection.db.collection('videos.files').find({ filename }).toArray();
+        if (files && files.length > 0) {
+          const fileDoc = files[0];
+          const range = req.headers.range;
+
+          if (range) {
+            const parts = range.replace(/bytes=/, "").split("-");
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : fileDoc.length - 1;
+            const chunksize = (end - start) + 1;
+
+            res.writeHead(206, {
+              'Content-Range': `bytes ${start}-${end}/${fileDoc.length}`,
+              'Accept-Ranges': 'bytes',
+              'Content-Length': chunksize,
+              'Content-Type': fileDoc.contentType || 'video/mp4',
+            });
+
+            const downloadStream = bucket.openDownloadStreamByName(filename, { start, end: end + 1 });
+            return downloadStream.pipe(res);
+          } else {
+            res.writeHead(200, {
+              'Content-Length': fileDoc.length,
+              'Content-Type': fileDoc.contentType || 'video/mp4',
+              'Accept-Ranges': 'bytes'
+            });
+            const downloadStream = bucket.openDownloadStreamByName(filename);
+            return downloadStream.pipe(res);
+          }
+        }
+      }
+    } catch (gridErr) {
+      console.warn('[GridFS Stream Warning]:', gridErr.message);
+    }
+  }
+
+  // 3. Fallback to resilient CDN stream if file was deleted
   return res.redirect(302, 'https://vjs.zencdn.net/v/oceans.mp4');
 });
 
@@ -104,7 +160,6 @@ router.post('/', requireAuth, handleVideoUpload('video'), async (req, res) => {
 
     // Validate title
     if (!title || !title.trim()) {
-      // If a file was written to disk, clean it up before returning error
       if (req.file) {
         fs.unlink(req.file.path, () => {});
       }
@@ -120,10 +175,24 @@ router.post('/', requireAuth, handleVideoUpload('video'), async (req, res) => {
     let mimeType = 'video/mp4';
 
     if (req.file) {
-      // Stream URL handled by Express video streamer
       videoUrl = `/api/videos/stream/${req.file.filename}`;
       fileSize = req.file.size;
       mimeType = req.file.mimetype;
+
+      // Pipe to MongoDB Atlas GridFS for persistent cross-container streaming
+      if (mongoose.connection.readyState >= 1) {
+        try {
+          const bucket = getGridBucket();
+          if (bucket) {
+            const uploadStream = bucket.openUploadStream(req.file.filename, {
+              contentType: req.file.mimetype
+            });
+            fs.createReadStream(req.file.path).pipe(uploadStream);
+          }
+        } catch (gridErr) {
+          console.warn('[GridFS Upload Warning]:', gridErr.message);
+        }
+      }
     } else if (req.body.videoUrl && req.body.videoUrl.trim()) {
       videoUrl = req.body.videoUrl.trim();
     } else {
@@ -136,8 +205,8 @@ router.post('/', requireAuth, handleVideoUpload('video'), async (req, res) => {
     // Resolve a unique eye-catching teaser cover if none provided
     const resolvedThumb = resolveTeaserCover(thumbnail, videoUrl, `vid-${Date.now()}`);
 
-    // Write metadata to Video model
-    const newVideo = Video.create({
+    // Write metadata to Video model (MongoDB Atlas + memory)
+    const newVideo = await Video.create({
       title,
       description,
       videoUrl,
@@ -167,14 +236,14 @@ router.post('/', requireAuth, handleVideoUpload('video'), async (req, res) => {
       comments: [],
       unlockedUsers: []
     };
-    mockPosts.unshift(feedPost);
+    await Post.create(feedPost);
 
     // Increment creator's post counter if uploader is a creator
     if (req.user.role === 'creator') {
       req.user.postCount = (req.user.postCount || 0) + 1;
     }
 
-    const enrichedVideo = Video.findById(newVideo.id);
+    const enrichedVideo = await Video.findById(newVideo.id);
 
     return res.status(201).json({
       success: true,
@@ -195,9 +264,9 @@ router.post('/', requireAuth, handleVideoUpload('video'), async (req, res) => {
 });
 
 // DELETE /api/videos/:id - Protected endpoint to delete a video and unlink file
-router.delete('/:id', requireAuth, (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const video = Video.findById(req.params.id);
+    const video = await Video.findById(req.params.id);
     if (!video) {
       return res.status(404).json({ success: false, message: 'Video not found.' });
     }
@@ -216,12 +285,13 @@ router.delete('/:id', requireAuth, (req, res) => {
       }
     }
 
-    Video.delete(req.params.id, req.user.id);
+    await Video.delete(req.params.id, req.user.id);
 
-    // Also remove corresponding post from mockPosts feed
-    const postIdx = mockPosts.findIndex(p => p.mediaUrl === video.videoUrl);
-    if (postIdx !== -1) {
-      mockPosts.splice(postIdx, 1);
+    // Also remove corresponding post from feed
+    const allPosts = await Post.getAll();
+    const post = allPosts.find(p => p.mediaUrl === video.videoUrl);
+    if (post) {
+      await Post.delete(post.id);
       if (req.user.postCount > 0) {
         req.user.postCount -= 1;
       }

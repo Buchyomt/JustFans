@@ -50,12 +50,49 @@ app.use(async (req, res, next) => {
 });
 
 // Fallback streamer for /uploads/videos/:filename so videos never fail or 404
-app.get('/uploads/videos/:filename', (req, res) => {
+app.get('/uploads/videos/:filename', async (req, res) => {
   const filename = req.params.filename;
   const localFile = path.join(__dirname, '../uploads/videos', filename);
   if (fs.existsSync(localFile)) {
     return res.sendFile(localFile);
   }
+
+  // Stream from MongoDB Atlas GridFS if present
+  if (mongoose.connection.readyState >= 1) {
+    try {
+      const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'videos' });
+      const files = await mongoose.connection.db.collection('videos.files').find({ filename }).toArray();
+      if (files && files.length > 0) {
+        const fileDoc = files[0];
+        const range = req.headers.range;
+        if (range) {
+          const parts = range.replace(/bytes=/, "").split("-");
+          const start = parseInt(parts[0], 10);
+          const end = parts[1] ? parseInt(parts[1], 10) : fileDoc.length - 1;
+          const chunksize = (end - start) + 1;
+
+          res.writeHead(206, {
+            'Content-Range': `bytes ${start}-${end}/${fileDoc.length}`,
+            'Accept-Ranges': 'bytes',
+            'Content-Length': chunksize,
+            'Content-Type': fileDoc.contentType || 'video/mp4',
+          });
+
+          return bucket.openDownloadStreamByName(filename, { start, end: end + 1 }).pipe(res);
+        } else {
+          res.writeHead(200, {
+            'Content-Length': fileDoc.length,
+            'Content-Type': fileDoc.contentType || 'video/mp4',
+            'Accept-Ranges': 'bytes'
+          });
+          return bucket.openDownloadStreamByName(filename).pipe(res);
+        }
+      }
+    } catch (e) {
+      console.warn('[Uploads GridFS stream notice]:', e.message);
+    }
+  }
+
   return res.redirect(302, 'https://vjs.zencdn.net/v/oceans.mp4');
 });
 
