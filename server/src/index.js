@@ -39,7 +39,7 @@ app.use(async (req, res, next) => {
   if (req.path === '/api/health' || req.path === '/health') {
     return next();
   }
-  if (mongoose.connection.readyState < 1 && process.env.MONGODB_URI) {
+  if (mongoose.connection.readyState < 1) {
     try {
       await connectDB();
     } catch (err) {

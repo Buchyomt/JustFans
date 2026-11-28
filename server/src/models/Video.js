@@ -17,45 +17,8 @@ const VideoSchema = new mongoose.Schema({
 
 export const MongoVideo = mongoose.models.Video || mongoose.model('Video', VideoSchema);
 
-// Seed video collection
-const initialVideos = [
-  {
-    id: "video-101",
-    title: "Uncensored 4K Solo Bedroom Tape [Full Length]",
-    description: "Exclusive full session for all active VIP subscribers. Uncut 4K video drop.",
-    videoUrl: "https://vjs.zencdn.net/v/oceans.mp4",
-    thumbnail: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80",
-    uploaderId: "creator-1",
-    createdAt: "2026-11-05T08:30:00.000Z",
-    fileSize: 48520300,
-    mimeType: "video/mp4",
-    views: 3420
-  },
-  {
-    id: "video-102",
-    title: "EXCLUSIVE: Secret Midnight Session 💦",
-    description: "Special uncut 4K video session for VIP fans. Turn your volume up!",
-    videoUrl: "https://media.w3.org/2010/05/sintel/trailer.mp4",
-    thumbnail: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-    uploaderId: "creator-1",
-    createdAt: "2026-11-04T16:00:00.000Z",
-    fileSize: 84320000,
-    mimeType: "video/mp4",
-    views: 8940
-  },
-  {
-    id: "video-103",
-    title: "Maya Lin Private TS Tape & Toy Play 🏳️‍⚧️💋",
-    description: "Full private session with interactive toy play and morning shower teaser.",
-    videoUrl: "https://vjs.zencdn.net/v/oceans.mp4",
-    thumbnail: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800&auto=format&fit=crop&q=80",
-    uploaderId: "creator-4",
-    createdAt: "2026-11-03T20:15:00.000Z",
-    fileSize: 112450000,
-    mimeType: "video/mp4",
-    views: 2150
-  }
-];
+// Initial video collection - set to empty array so no fake videos are seeded
+const initialVideos = [];
 
 const TEASER_COVERS = [
   "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80",
@@ -179,4 +142,3 @@ class VideoModel {
 }
 
 export const Video = new VideoModel();
-

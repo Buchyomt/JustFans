@@ -80,9 +80,16 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
     let isMounted = true;
     (async () => {
       if (post.mediaUrl) {
-        const cached = await getVideoFromLocalCache(post.mediaUrl);
+        let cached = await getVideoFromLocalCache(post.mediaUrl);
+        if (!cached && post.id) {
+          cached = await getVideoFromLocalCache(post.id);
+        }
         if (cached && isMounted) {
           setVideoSrc(cached);
+          return;
+        }
+        if (window.__localVideoBlobs && window.__localVideoBlobs[post.mediaUrl] && isMounted) {
+          setVideoSrc(window.__localVideoBlobs[post.mediaUrl]);
           return;
         }
       }
@@ -201,7 +208,6 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
   const isOwner = currentUser && (
     currentUser.id === postData.creatorId || 
     currentUser.id === postData.creator?.id || 
-    currentUser.role === 'creator' ||
     currentUser.role === 'admin'
   );
 
@@ -318,7 +324,7 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
                 <CheckCircle2 className="w-4 h-4 text-[#00aff0] fill-[#00aff0]/20 flex-shrink-0" />
               </div>
               <p className="text-xs text-gray-400">
-                @{postData.creator?.username || "uni_ques78"} · <span className="text-gray-500">{new Date(postData.createdAt).toLocaleDateString()}</span>
+                @{postData.creator?.username || "uni_ques78"} · <span className="text-gray-500">{new Date(postData.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date(postData.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               </p>
             </div>
           </Link>

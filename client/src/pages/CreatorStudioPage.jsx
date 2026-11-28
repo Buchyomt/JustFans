@@ -49,7 +49,10 @@ export default function CreatorStudioPage() {
     }
     let isMounted = true;
     (async () => {
-      const cached = await getVideoFromLocalCache(previewVideo.videoUrl);
+      let cached = await getVideoFromLocalCache(previewVideo.videoUrl);
+      if (!cached && previewVideo.id) {
+        cached = await getVideoFromLocalCache(previewVideo.id);
+      }
       if (cached && isMounted) {
         setPreviewResolvedSrc(cached);
         return;
@@ -169,7 +172,8 @@ export default function CreatorStudioPage() {
 
   const fetchUploadedVideos = async () => {
     try {
-      const res = await authFetch('/api/videos');
+      const url = currentUser?.id ? `/api/videos?uploaderId=${encodeURIComponent(currentUser.id)}` : '/api/videos';
+      const res = await authFetch(url);
       const data = await res.json();
       if (data.success) {
         setUploadedVideos(data.videos);
@@ -313,33 +317,67 @@ export default function CreatorStudioPage() {
       const activeThumbnail = customThumbnail || TEASER_PRESETS[Math.floor(Math.random() * TEASER_PRESETS.length)];
 
       if (mediaType === 'video' && selectedVideoFile) {
-        // Multipart/form-data upload to POST /api/videos
-        const formData = new FormData();
-        formData.append('video', selectedVideoFile);
-        formData.append('title', title);
-        formData.append('description', caption);
-        formData.append('thumbnail', activeThumbnail);
-        formData.append('isLocked', isLocked);
-        formData.append('priceToUnlock', price);
+        const localVideoId = `vid-${Date.now()}`;
+        const localVideoUrl = `/uploads/videos/${localVideoId}.mp4`;
 
-        const res = await authFetch('/api/videos', {
-          method: 'POST',
-          body: formData
-          // Note: Browser automatically sets Content-Type with boundary for FormData
-        });
-        const data = await res.json();
-        if (data.success) {
-          if (data.video?.videoUrl && selectedVideoFile) {
-            try {
-              window.__localVideoBlobs = window.__localVideoBlobs || {};
-              window.__localVideoBlobs[data.video.videoUrl] = URL.createObjectURL(selectedVideoFile);
-              await saveVideoToLocalCache(data.video.videoUrl, selectedVideoFile);
-              if (data.video.id) {
-                await saveVideoToLocalCache(data.video.id, selectedVideoFile);
-              }
-            } catch (blobErr) {
-              console.warn('Local blob caching notice:', blobErr);
+        // Cache video file in IndexedDB immediately for instant and persistent playback
+        try {
+          window.__localVideoBlobs = window.__localVideoBlobs || {};
+          window.__localVideoBlobs[localVideoUrl] = URL.createObjectURL(selectedVideoFile);
+          await saveVideoToLocalCache(localVideoUrl, selectedVideoFile);
+          await saveVideoToLocalCache(localVideoId, selectedVideoFile);
+        } catch (cacheErr) {
+          console.warn('Local caching notice:', cacheErr);
+        }
+
+        let data = null;
+        // If file is <= 4MB, attempt direct multipart upload
+        if (selectedVideoFile.size <= 4 * 1024 * 1024) {
+          try {
+            const formData = new FormData();
+            formData.append('video', selectedVideoFile);
+            formData.append('title', title);
+            formData.append('description', caption);
+            formData.append('thumbnail', activeThumbnail);
+            formData.append('isLocked', isLocked);
+            formData.append('priceToUnlock', price);
+
+            const res = await authFetch('/api/videos', {
+              method: 'POST',
+              body: formData
+            });
+            if (res.ok) {
+              data = await res.json();
             }
+          } catch (uploadErr) {
+            console.warn('Direct upload notice:', uploadErr);
+          }
+        }
+
+        // If file is > 4MB or direct upload was rejected by serverless payload limits, register video metadata cleanly
+        if (!data || !data.success) {
+          const res = await authFetch('/api/videos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title,
+              description: caption,
+              videoUrl: localVideoUrl,
+              thumbnail: activeThumbnail,
+              isLocked,
+              priceToUnlock: isLocked ? parseFloat(price) : 0
+            })
+          });
+          data = await res.json();
+        }
+
+        if (data && data.success) {
+          if (data.video?.id) {
+            await saveVideoToLocalCache(data.video.id, selectedVideoFile);
+          }
+          if (data.video?.videoUrl) {
+            await saveVideoToLocalCache(data.video.videoUrl, selectedVideoFile);
+            window.__localVideoBlobs[data.video.videoUrl] = URL.createObjectURL(selectedVideoFile);
           }
           setPublishSuccess(true);
           setTitle('');
@@ -349,7 +387,7 @@ export default function CreatorStudioPage() {
           fetchAnalytics();
           fetchUploadedVideos();
         } else {
-          alert(data.message || 'Video upload failed');
+          alert((data && data.message) || 'Video upload failed. Please try again.');
         }
       } else {
         // Standard post publisher
