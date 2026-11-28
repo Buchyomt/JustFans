@@ -315,9 +315,9 @@ router.post('/:id/bookmark', requireAuth, (req, res) => {
 });
 
 // PUT /api/posts/:id (PROTECTED - Creator self or Admin edit)
-router.put('/:id', requireAuth, (req, res) => {
+router.put('/:id', requireAuth, async (req, res) => {
   try {
-    const post = mockPosts.find(p => p.id === req.params.id);
+    const post = (await Post.findById(req.params.id)) || mockPosts.find(p => p.id === req.params.id);
     if (!post) {
       return res.status(404).json({ success: false, message: "Post not found." });
     }
@@ -328,26 +328,33 @@ router.put('/:id', requireAuth, (req, res) => {
     }
 
     const { title, caption, mediaUrl, mediaType, thumbnail, isLocked, priceToUnlock, tags } = req.body;
+    const updates = {};
 
-    if (title !== undefined) post.title = title.trim();
-    if (caption !== undefined) post.caption = caption.trim();
-    if (mediaUrl !== undefined) post.mediaUrl = mediaUrl.trim();
-    if (mediaType !== undefined) post.mediaType = mediaType;
+    if (title !== undefined) updates.title = title.trim();
+    if (caption !== undefined) updates.caption = caption.trim();
+    if (mediaUrl !== undefined) updates.mediaUrl = mediaUrl.trim();
+    if (mediaType !== undefined) updates.mediaType = mediaType;
     if (thumbnail !== undefined) {
-      post.thumbnail = resolveTeaserCover(thumbnail.trim(), post.mediaUrl, post.id);
+      updates.thumbnail = resolveTeaserCover(thumbnail.trim(), updates.mediaUrl || post.mediaUrl, post.id);
     } else if (mediaUrl !== undefined && (!post.thumbnail || post.thumbnail === '/FhNtifmVQAEZDgwy.jpg' || /\.(mp4|mov|webm|mkv|m4v)($|\?)/i.test(post.thumbnail))) {
-      post.thumbnail = resolveTeaserCover(null, mediaUrl.trim(), post.id);
+      updates.thumbnail = resolveTeaserCover(null, mediaUrl.trim(), post.id);
     }
-    if (isLocked !== undefined) post.isLocked = Boolean(isLocked);
-    if (priceToUnlock !== undefined) post.priceToUnlock = Number(priceToUnlock);
-    if (tags !== undefined) post.tags = Array.isArray(tags) ? tags : [tags];
+    if (isLocked !== undefined) updates.isLocked = Boolean(isLocked);
+    if (priceToUnlock !== undefined) updates.priceToUnlock = Number(priceToUnlock);
+    if (tags !== undefined) updates.tags = Array.isArray(tags) ? tags : [tags];
 
-    post.updatedAt = new Date().toISOString();
+    const updatedPost = await Post.update(req.params.id, updates);
+
+    // Also sync mockPosts in memory
+    const mockIdx = mockPosts.findIndex(p => p.id === req.params.id);
+    if (mockIdx !== -1) {
+      mockPosts[mockIdx] = { ...mockPosts[mockIdx], ...updates };
+    }
 
     return res.json({
       success: true,
       message: "Post updated successfully!",
-      post: enrichPost(post, currentUser)
+      post: enrichPost(updatedPost, currentUser)
     });
   } catch (err) {
     console.error('[Edit Post Error]:', err);
@@ -358,12 +365,11 @@ router.put('/:id', requireAuth, (req, res) => {
 // DELETE /api/posts/:id (PROTECTED - Creator self or Admin)
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const postIdx = mockPosts.findIndex(p => p.id === req.params.id);
-    if (postIdx === -1) {
+    const post = (await Post.findById(req.params.id)) || mockPosts.find(p => p.id === req.params.id);
+    if (!post) {
       return res.status(404).json({ success: false, message: "Post not found." });
     }
 
-    const post = mockPosts[postIdx];
     const currentUser = req.user;
 
     // Check ownership
@@ -381,14 +387,18 @@ router.delete('/:id', requireAuth, async (req, res) => {
     }
 
     // Also remove from Video catalog if present
-    const videoEntry = Video.findAll().find(v => v.videoUrl === post.mediaUrl);
+    const allVideos = await Video.findAll();
+    const videoEntry = allVideos.find(v => v.videoUrl === post.mediaUrl);
     if (videoEntry) {
-      Video.delete(videoEntry.id, currentUser.id);
+      await Video.delete(videoEntry.id, currentUser.id);
     }
 
     // Remove from mockPosts array and MongoDB Atlas
     await Post.delete(req.params.id);
-    mockPosts.splice(postIdx, 1);
+    const mockIdx = mockPosts.findIndex(p => p.id === req.params.id);
+    if (mockIdx !== -1) {
+      mockPosts.splice(mockIdx, 1);
+    }
 
     if (currentUser.postCount && currentUser.postCount > 0) {
       currentUser.postCount -= 1;

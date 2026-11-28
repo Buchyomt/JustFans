@@ -1,5 +1,7 @@
 import express from 'express';
 import { mockUsers, mockPosts } from '../data/mockData.js';
+import { User } from '../models/User.js';
+import { Post } from '../models/Post.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
 import { uploadAvatarMiddleware } from '../middleware/upload.js';
 
@@ -60,15 +62,16 @@ const enrichPost = (post, currentUser, creator) => {
 };
 
 // GET /api/creators/:username
-router.get('/:username', optionalAuth, (req, res) => {
+router.get('/:username', optionalAuth, async (req, res) => {
   const { username } = req.params;
-  const creator = mockUsers.find(u => u.role === 'creator' && (u.username.toLowerCase() === username.toLowerCase() || u.id === username));
+  const creator = (await User.findById(username)) || (await User.findByUsername(username)) || mockUsers.find(u => u.role === 'creator' && (u.username?.toLowerCase() === username.toLowerCase() || u.id === username));
 
   if (!creator) {
     return res.status(404).json({ success: false, message: "Creator not found." });
   }
 
-  const posts = mockPosts.filter(p => p.creatorId === creator.id);
+  const allPosts = await Post.getAll();
+  const posts = allPosts.filter(p => p.creatorId === creator.id);
   const currentUser = req.user;
   const isSubscribed = currentUser ? currentUser.subscriptions?.some(s => s.creatorId === creator.id) : false;
   const isFollowing = currentUser ? currentUser.following?.includes(creator.id) : false;

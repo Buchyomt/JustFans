@@ -588,6 +588,7 @@ export default function FeedPage() {
                 onTip={(p) => setActiveTipPost(p)}
                 onSubscribe={(c) => setActiveSubCreator(c)}
                 onDelete={(postId) => setPosts(prev => prev.filter(p => p.id !== postId))}
+                onUpdate={(updated) => setPosts(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p))}
               />
             ))}
           </div>

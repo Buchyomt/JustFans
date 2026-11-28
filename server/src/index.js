@@ -50,7 +50,7 @@ app.use(async (req, res, next) => {
 });
 
 // Fallback streamer for /uploads/videos/:filename so videos never fail or 404
-app.get('/uploads/videos/:filename', async (req, res) => {
+app.get(['/uploads/videos/:filename', '/api/uploads/videos/:filename'], async (req, res) => {
   const filename = req.params.filename;
   const localFile = path.join(__dirname, '../uploads/videos', filename);
   if (fs.existsSync(localFile)) {
@@ -60,32 +60,43 @@ app.get('/uploads/videos/:filename', async (req, res) => {
   // Stream from MongoDB Atlas GridFS if present
   if (mongoose.connection.readyState >= 1) {
     try {
-      const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'videos' });
-      const files = await mongoose.connection.db.collection('videos.files').find({ filename }).toArray();
-      if (files && files.length > 0) {
-        const fileDoc = files[0];
-        const range = req.headers.range;
-        if (range) {
-          const parts = range.replace(/bytes=/, "").split("-");
-          const start = parseInt(parts[0], 10);
-          const end = parts[1] ? parseInt(parts[1], 10) : fileDoc.length - 1;
-          const chunksize = (end - start) + 1;
+      const db = mongoose.connection.db || (mongoose.connection.client ? mongoose.connection.client.db(mongoose.connection.name || 'justfans') : null);
+      if (db) {
+        const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: 'videos' });
+        const cleanName = filename.replace(/\.(mp4|mov|webm|mkv|m4v)$/i, '');
+        const files = await db.collection('videos.files').find({
+          $or: [
+            { filename },
+            { filename: `${cleanName}.mp4` },
+            { filename: new RegExp(`^${cleanName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }
+          ]
+        }).toArray();
 
-          res.writeHead(206, {
-            'Content-Range': `bytes ${start}-${end}/${fileDoc.length}`,
-            'Accept-Ranges': 'bytes',
-            'Content-Length': chunksize,
-            'Content-Type': fileDoc.contentType || 'video/mp4',
-          });
+        if (files && files.length > 0) {
+          const fileDoc = files[0];
+          const range = req.headers.range;
+          if (range) {
+            const parts = range.replace(/bytes=/, "").split("-");
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : fileDoc.length - 1;
+            const chunksize = (end - start) + 1;
 
-          return bucket.openDownloadStreamByName(filename, { start, end: end + 1 }).pipe(res);
-        } else {
-          res.writeHead(200, {
-            'Content-Length': fileDoc.length,
-            'Content-Type': fileDoc.contentType || 'video/mp4',
-            'Accept-Ranges': 'bytes'
-          });
-          return bucket.openDownloadStreamByName(filename).pipe(res);
+            res.writeHead(206, {
+              'Content-Range': `bytes ${start}-${end}/${fileDoc.length}`,
+              'Accept-Ranges': 'bytes',
+              'Content-Length': chunksize,
+              'Content-Type': fileDoc.contentType || 'video/mp4',
+            });
+
+            return bucket.openDownloadStreamByName(fileDoc.filename, { start, end: end + 1 }).pipe(res);
+          } else {
+            res.writeHead(200, {
+              'Content-Length': fileDoc.length,
+              'Content-Type': fileDoc.contentType || 'video/mp4',
+              'Accept-Ranges': 'bytes'
+            });
+            return bucket.openDownloadStreamByName(fileDoc.filename).pipe(res);
+          }
         }
       }
     } catch (e) {

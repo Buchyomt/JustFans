@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { extractVideoFrames, formatVideoTime } from '../utils/videoThumbnails';
-import { getVideoFromLocalCache } from '../utils/videoStorage';
+import { saveVideoToLocalCache, getVideoFromLocalCache } from '../utils/videoStorage';
 import { 
   Heart, 
   MessageCircle, 
@@ -43,7 +43,7 @@ export const getPostCover = (post) => {
   return DEFAULT_COVERS[Math.abs(seed) % DEFAULT_COVERS.length];
 };
 
-export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
+export default function PostCard({ post, onTip, onSubscribe, onDelete, onUpdate }) {
   const { currentUser, isAuthenticated, authFetch, updateBalance } = useAuth();
   const navigate = useNavigate();
 
@@ -64,7 +64,7 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [editTitle, setEditTitle] = useState(post.title);
+  const [editTitle, setEditTitle] = useState(post.title || post.caption || 'Exclusive Post');
   const [editCaption, setEditCaption] = useState(post.caption || '');
   const [editMediaUrl, setEditMediaUrl] = useState(post.mediaUrl || '');
   const [editThumbnail, setEditThumbnail] = useState(getPostCover(post));
@@ -235,34 +235,56 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingFile(true);
-    setUploadMessage('Uploading replacement video to server...');
+    setUploadMessage('Preparing replacement video...');
+
+    const localVideoId = `vid-${Date.now()}`;
+    const localVideoUrl = `/uploads/videos/${localVideoId}.mp4`;
+
     try {
-      const formData = new FormData();
-      formData.append('video', file);
-      const res = await authFetch('/api/videos/upload-file', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      if (data.success && data.videoUrl) {
-        setEditMediaUrl(data.videoUrl);
-        setUploadMessage(`✓ Successfully uploaded: ${file.name}`);
-        
-        // Extract real frames from uploaded video
-        try {
-          const frames = await extractVideoFrames(file, 6);
-          if (frames && frames.length > 0) {
-            setEditExtractedFrames(frames);
-            setEditThumbnail(frames[0].dataUrl);
-          }
-        } catch (frameErr) {
-          console.warn('Frame capture notice:', frameErr);
+      // 1. Immediately cache in IndexedDB for instant zero-latency playback
+      window.__localVideoBlobs = window.__localVideoBlobs || {};
+      window.__localVideoBlobs[localVideoUrl] = URL.createObjectURL(file);
+      await saveVideoToLocalCache(localVideoUrl, file);
+      await saveVideoToLocalCache(localVideoId, file);
+
+      // Extract real frames from uploaded video
+      try {
+        const frames = await extractVideoFrames(file, 6);
+        if (frames && frames.length > 0) {
+          setEditExtractedFrames(frames);
+          setEditThumbnail(frames[0].dataUrl);
         }
-      } else {
-        setUploadMessage(data.message || 'Upload failed');
+      } catch (frameErr) {
+        console.warn('Frame capture notice:', frameErr);
       }
-    } catch {
-      setUploadMessage('Upload network error.');
+
+      let assignedUrl = localVideoUrl;
+
+      // 2. If <= 4MB, attempt server upload to GridFS as well
+      if (file.size <= 4 * 1024 * 1024) {
+        try {
+          const formData = new FormData();
+          formData.append('video', file);
+          const res = await authFetch('/api/videos/upload-file', {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json();
+          if (data.success && data.videoUrl) {
+            assignedUrl = data.videoUrl;
+            await saveVideoToLocalCache(data.videoUrl, file);
+            window.__localVideoBlobs[data.videoUrl] = URL.createObjectURL(file);
+          }
+        } catch (uploadErr) {
+          console.warn('Direct upload notice:', uploadErr);
+        }
+      }
+
+      setEditMediaUrl(assignedUrl);
+      setUploadMessage(`✓ Ready to save: ${file.name}`);
+    } catch (err) {
+      console.error('Replacement video error:', err);
+      setUploadMessage('Error processing video file.');
     } finally {
       setUploadingFile(false);
     }
@@ -271,14 +293,14 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
   // Save edited post
   const handleSaveEdit = async (e) => {
     e.preventDefault();
-    if (!editTitle.trim()) return;
+    const finalTitle = (editTitle || postData.title || editCaption || 'Exclusive Post').trim();
     setIsSavingEdit(true);
     try {
       const res = await authFetch(`/api/posts/${postData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: editTitle.trim(),
+          title: finalTitle,
           caption: editCaption.trim(),
           mediaUrl: editMediaUrl.trim(),
           thumbnail: editThumbnail,
@@ -289,7 +311,12 @@ export default function PostCard({ post, onTip, onSubscribe, onDelete }) {
       const data = await res.json();
       if (data.success && data.post) {
         setPostData(data.post);
+        setVideoSrc(data.post.mediaUrl);
+        if (window.__localVideoBlobs && window.__localVideoBlobs[data.post.mediaUrl]) {
+          setVideoSrc(window.__localVideoBlobs[data.post.mediaUrl]);
+        }
         setIsEditing(false);
+        if (onUpdate) onUpdate(data.post);
       } else {
         alert(data.message || 'Update failed');
       }

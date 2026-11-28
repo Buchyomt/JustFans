@@ -32,6 +32,21 @@ export const seedInitialData = async () => {
     if (postCount === 0) {
       console.log('🌱 [MongoDB Atlas] Seeding default posts...');
       await MongoPost.insertMany(mockPosts);
+    } else {
+      // Ensure all seeded posts have their titles and content synchronized
+      const postsWithoutTitle = await MongoPost.find({
+        $or: [
+          { title: { $exists: false } },
+          { title: '' },
+          { title: null },
+          { title: 'undefined' }
+        ]
+      });
+      for (const p of postsWithoutTitle) {
+        const match = mockPosts.find(m => m.id === p.id);
+        const titleToSet = match?.title || (p.caption ? p.caption.slice(0, 50) : 'Exclusive Content');
+        await MongoPost.updateOne({ id: p.id }, { $set: { title: titleToSet } });
+      }
     }
 
     const threadCount = await MongoThread.countDocuments();

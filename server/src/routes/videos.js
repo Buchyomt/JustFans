@@ -11,12 +11,23 @@ import { resolveTeaserCover } from './posts.js';
 
 const router = express.Router();
 
-// Helper to access MongoDB GridFS bucket
-const getGridBucket = () => {
+// Helper to get raw MongoDB database instance (compatible with Mongoose 8 and Serverless)
+export const getMongoDB = () => {
   if (mongoose.connection.readyState >= 1) {
+    if (mongoose.connection.db) return mongoose.connection.db;
+    if (mongoose.connection.client) return mongoose.connection.client.db(mongoose.connection.name || 'justfans');
+  }
+  return null;
+};
+
+// Helper to access MongoDB GridFS bucket
+export const getGridBucket = () => {
+  const db = getMongoDB();
+  if (db) {
     try {
-      return new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'videos' });
-    } catch {
+      return new mongoose.mongo.GridFSBucket(db, { bucketName: 'videos' });
+    } catch (e) {
+      console.warn('[GridFSBucket init error]:', e.message);
       return null;
     }
   }
@@ -94,39 +105,46 @@ router.get('/stream/:filename', async (req, res) => {
   }
 
   // 2. Stream directly from MongoDB Atlas GridFS
-  if (mongoose.connection.readyState >= 1) {
+  const db = getMongoDB();
+  const bucket = getGridBucket();
+  if (db && bucket) {
     try {
-      const bucket = getGridBucket();
-      if (bucket) {
-        const files = await mongoose.connection.db.collection('videos.files').find({ filename }).toArray();
-        if (files && files.length > 0) {
-          const fileDoc = files[0];
-          const range = req.headers.range;
+      const cleanName = filename.replace(/\.(mp4|mov|webm|mkv|m4v)$/i, '');
+      const files = await db.collection('videos.files').find({
+        $or: [
+          { filename },
+          { filename: `${cleanName}.mp4` },
+          { filename: new RegExp(`^${cleanName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }
+        ]
+      }).toArray();
 
-          if (range) {
-            const parts = range.replace(/bytes=/, "").split("-");
-            const start = parseInt(parts[0], 10);
-            const end = parts[1] ? parseInt(parts[1], 10) : fileDoc.length - 1;
-            const chunksize = (end - start) + 1;
+      if (files && files.length > 0) {
+        const fileDoc = files[0];
+        const range = req.headers.range;
 
-            res.writeHead(206, {
-              'Content-Range': `bytes ${start}-${end}/${fileDoc.length}`,
-              'Accept-Ranges': 'bytes',
-              'Content-Length': chunksize,
-              'Content-Type': fileDoc.contentType || 'video/mp4',
-            });
+        if (range) {
+          const parts = range.replace(/bytes=/, "").split("-");
+          const start = parseInt(parts[0], 10);
+          const end = parts[1] ? parseInt(parts[1], 10) : fileDoc.length - 1;
+          const chunksize = (end - start) + 1;
 
-            const downloadStream = bucket.openDownloadStreamByName(filename, { start, end: end + 1 });
-            return downloadStream.pipe(res);
-          } else {
-            res.writeHead(200, {
-              'Content-Length': fileDoc.length,
-              'Content-Type': fileDoc.contentType || 'video/mp4',
-              'Accept-Ranges': 'bytes'
-            });
-            const downloadStream = bucket.openDownloadStreamByName(filename);
-            return downloadStream.pipe(res);
-          }
+          res.writeHead(206, {
+            'Content-Range': `bytes ${start}-${end}/${fileDoc.length}`,
+            'Accept-Ranges': 'bytes',
+            'Content-Length': chunksize,
+            'Content-Type': fileDoc.contentType || 'video/mp4',
+          });
+
+          const downloadStream = bucket.openDownloadStreamByName(fileDoc.filename, { start, end: end + 1 });
+          return downloadStream.pipe(res);
+        } else {
+          res.writeHead(200, {
+            'Content-Length': fileDoc.length,
+            'Content-Type': fileDoc.contentType || 'video/mp4',
+            'Accept-Ranges': 'bytes'
+          });
+          const downloadStream = bucket.openDownloadStreamByName(fileDoc.filename);
+          return downloadStream.pipe(res);
         }
       }
     } catch (gridErr) {
